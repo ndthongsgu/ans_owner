@@ -6,6 +6,9 @@ export const REQUIRE_AUTH_ROUTES = {
   BOOKING_HISTORY: "/booking-history",
   NOTIFICATION_LIST: "/notifications",
   NOTIFICATION_DETAIL: "/notifications/:id",
+  // Owner routes
+  OWNER_DASHBOARD: "/owner",
+  OWNER_PROFILE: "/owner/profile",
 };
 
 export const PUBLIC_ROUTES = {

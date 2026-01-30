@@ -8,6 +8,13 @@ export interface CustomerProfileUpdate {
   email?: string;
   phone: string;
   password?: string;
+
+  // Owner/shop specific (optional)
+  shopName?: string;
+  shopLocation?: string;
+  narrationContent?: string;
+  // subscription id when selecting a package
+  subscriptionId?: string;
 }
 
 export const useGetCurrentUser = () => {

@@ -21,6 +21,7 @@ export default function AppHeader() {
     displayEmail,
     displayInitial,
     clearAuth,
+    profile,
   } = useAuth();
   const logoutMutation = useLogout();
   // const [notifications] = useState(["Bạn có vé mới", "Khuyến mãi đặc biệt"]);
@@ -95,6 +96,16 @@ export default function AppHeader() {
         label: "Thông tin cá nhân",
         icon: <UserOutlined />,
       },
+      // Nếu user có role "OWNER" hiển thị link tới dashboard chủ quán
+      ...( ( (profile as any)?.roles || [] ).some((r: any) => r.code === "OWNER")
+        ? [
+            {
+              key: "ownerDashboard",
+              label: "Bảng chủ quán",
+              icon: <UserOutlined />,
+            },
+          ]
+        : []),
       {
         key: "history",
         label: "Lịch sử đặt vé",
@@ -112,6 +123,7 @@ export default function AppHeader() {
     ],
     onClick: ({ key }: { key: string }) => {
       if (key === "profileDetail") handleProfileClick();
+      if (key === "ownerDashboard") router.push(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
       if (key === "history") handleHistoryClick();
       if (key === "logout") handleLogout();
     },
@@ -195,7 +207,7 @@ export default function AppHeader() {
           </Dropdown>
 
           <a
-            href="tel:19001234"
+            href="tel:19005678"
             style={{
               color: "var(--color-accent-200)",
               fontWeight: 500,
@@ -207,7 +219,7 @@ export default function AppHeader() {
             }}
           >
             <PhoneOutlined />
-            Hotline: 1900 1234
+            Hotline hỗ trợ chủ quán: 1900 5678
           </a>
         </Space>
 
@@ -236,7 +248,7 @@ export default function AppHeader() {
               textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
             }}
           >
-            Viet Travel
+            Street Food Go
           </span>
         </Link>
 

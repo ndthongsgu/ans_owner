@@ -9,6 +9,7 @@ import {
   Tag,
   Divider,
 } from "antd";
+import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 
 const { Title, Text } = Typography;
 
@@ -60,9 +61,18 @@ export default function CustomerProfilePage() {
     phone: user?.customer?.phone || "",
   };
 
+  const isOwner = (user?.roles || []).some((r: any) => r.code === "OWNER");
+
   return (
     <div style={{ padding: "24px", maxWidth: 600, margin: "0 auto" }}>
       <Title level={2}>Thông tin cá nhân</Title>
+      {isOwner && (
+        <div style={{ marginBottom: 12 }}>
+          <Button type="default" onClick={() => (window.location.href = REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD)}>
+            Quản lý quán
+          </Button>
+        </div>
+      )}
 
       <Card>
         {updateProfileMutation.isError && (

@@ -47,6 +47,14 @@ const RequireAuthRoutes = [
         path: REQUIRE_AUTH_ROUTES.BOOKING_HISTORY,
         element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.BOOKING_HISTORY],
       },
+      {
+        path: REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD,
+        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD],
+      },
+      {
+        path: REQUIRE_AUTH_ROUTES.OWNER_PROFILE,
+        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_PROFILE],
+      },
     ],
   },
 ];

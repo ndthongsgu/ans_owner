@@ -1,73 +1,110 @@
-# React + TypeScript + Vite
+# ans_customer — React + TypeScript + Vite ⚡
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Mô tả ngắn:** ứng dụng Client (Customer) dùng React + TypeScript với Vite. README này hướng dẫn nhanh cách cài đặt, chạy ở môi trường phát triển, build và các lệnh thông dụng.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠 Yêu cầu trước
 
-## React Compiler
+- Node.js >= 18 (khuyến nghị LTS)
+- npm (hoặc pnpm / yarn)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Kiểm tra phiên bản:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+node -v
+npm -v
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🚀 Khởi động nhanh
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Cài dependencies:
+
+```bash
+# từ thư mục ans_customer
+npm install
+# hoặc nếu muốn cài chính xác theo lockfile
+npm ci
 ```
+
+2. Chạy dev server (hot reload):
+
+```bash
+npm run dev
+```
+Mặc định Vite sẽ chạy ở `http://localhost:5173` (hoặc port được log ra).
+
+3. Build production:
+
+```bash
+npm run build
+```
+
+4. Preview bản build (local):
+
+```bash
+npm run preview
+```
+
+---
+
+## 🔧 Biến môi trường
+
+- Tạo file `.env` hoặc `.env.local` để cấu hình URL API và biến client-side.
+- Biến muốn expose cho client **phải** có tiền tố `VITE_`.
+
+Ví dụ `.env`:
+
+```ini
+VITE_API_URL=https://api.example.com
+VITE_MAP_KEY=your-map-key
+```
+
+> **Tip:** lưu mẫu vào `.env.example` để dev khác biết cần những biến nào.
+
+---
+
+## ✅ Lint & Kiểm tra
+
+- Lint project:
+
+```bash
+npm run lint
+```
+
+- Type check: phần build gọi `tsc -b` nên chạy `npm run build` sẽ phát hiện lỗi type.
+- Tests: hiện tại chưa có cấu hình test. Nếu cần, mình có thể thêm `vitest`/`jest`.
+
+---
+
+## 🔁 Các lệnh thường dùng
+
+- **dev:** `npm run dev` — chạy server dev
+- **build:** `npm run build` — build production (`tsc -b && vite build`)
+- **preview:** `npm run preview` — preview build
+- **lint:** `npm run lint` — chạy ESLint
+
+---
+
+## 📦 Docker (tùy chọn)
+
+Nếu muốn, mình có thể thêm `Dockerfile` + `docker-compose.yml` để build image và chạy cùng backend/API.
+
+---
+
+## 🐛 Troubleshooting nhanh
+
+- Lỗi module / node-gyp: xóa `node_modules` và `package-lock.json`, sau đó `npm ci`.
+- Port trùng: Vite sẽ log port; đổi biến `PORT` hoặc dùng `npx kill-port <port>`.
+
+---
+
+## 🔚 Ghi chú
+
+- Nếu cần mình sẽ bổ sung: Docker, CI (GitHub Actions), mẫu `.env.example`, hoặc test setup.
+
+---
+
+Muốn mình thêm phần nào tiếp theo (Docker / CI / .env.example / test)? ✨```
