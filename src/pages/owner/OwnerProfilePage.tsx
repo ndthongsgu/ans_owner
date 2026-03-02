@@ -16,6 +16,10 @@ export default function OwnerProfilePage() {
     narrationContent: (user?.customer as any)?.narrationContent || "",
   };
 
+  const subscriptionName = (user?.customer as any)?.subscription?.name;
+  const subscriptionExpires = (user?.customer as any)?.subscription_expires_at;
+  const expText = subscriptionExpires ? new Date(subscriptionExpires).toLocaleDateString() : null;
+
   const onFinish = async (values: any) => {
     try {
       await updateProfileMutation.mutateAsync(values);
@@ -28,6 +32,17 @@ export default function OwnerProfilePage() {
   return (
     <div style={{ padding: 24 }}>
       <Title level={3}>Thông tin chủ quán</Title>
+
+      {subscriptionName && (
+        <Card style={{ marginBottom: 24 }}>
+          <div>
+            Gói đăng ký hiện tại: <strong>{subscriptionName}</strong>
+            {expText && (
+              <span> (hết hạn: <strong>{expText}</strong>)</span>
+            )}
+          </div>
+        </Card>
+      )}
 
       <Card>
         <Form layout="vertical" onFinish={onFinish} initialValues={initialValues}>

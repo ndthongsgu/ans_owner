@@ -1,6 +1,14 @@
 import type { BaseDto } from "./base.dto";
-import type { CustomerDto } from "./customer.dto";
 import type { TripUserResponse } from "./trip.dto";
+
+export interface CustomerDto extends BaseDto {
+  code: string;
+  name: string;
+  email: string;
+  phone: string;
+  customerType: null;
+  description: null;
+}
 
 export interface BookingSeatCreate {
   seatId: string;

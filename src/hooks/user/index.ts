@@ -4,9 +4,9 @@ import rootApiService from "@/services/api.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface CustomerProfileUpdate {
-  name: string;
+  name?: string;
   email?: string;
-  phone: string;
+  phone?: string;
   password?: string;
 
   // Owner/shop specific (optional)

@@ -35,7 +35,7 @@ function RegisterPageForm() {
     <div
       style={{
         padding: "20px 40px",
-        backgroundColor: "transparent",
+        backgroundColor: "white",
         borderRadius: "8px",
         width: "400px",
         maxWidth: "90vw",

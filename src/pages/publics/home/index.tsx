@@ -1,169 +1,164 @@
 import {
-  ClockCircleOutlined,
-  CreditCardOutlined,
-  CustomerServiceOutlined,
-  GlobalOutlined,
-  SafetyOutlined,
-  TrophyOutlined,
+  AudioOutlined,
+  BarChartOutlined,
+  CheckCircleOutlined,
+  ShopOutlined,
+  ThunderboltOutlined,
+  UserSwitchOutlined,
 } from "@ant-design/icons";
-import { Card, Col, Row } from "antd";
-import BusStationCarousel from "./bus-station";
-import MapSolution from "./map-solution";
-import PanelSection from "./panel";
-import PopularRoutes from "./popular-routes";
-import SocialLinkPage from "./social-link";
+import { Button, Card, Col, Row, Space, Tag, Typography } from "antd";
+import { Link } from "react-router-dom";
+import { PUBLIC_ROUTES } from "@/routes/routes";
+
+const { Title, Paragraph, Text } = Typography;
 
 export default function HomeScreen() {
-  const iconStyle = {
-    fontSize: "2rem",
-    color: "var(--color-primary-600)",
-  };
-
   const features = [
     {
-      icon: <SafetyOutlined style={iconStyle} />,
-      title: "An toàn tuyệt đối",
-      description: "Đội ngũ tài xế chuyên nghiệp, xe được bảo dưỡng định kỳ",
-    },
-    {
-      icon: <ClockCircleOutlined style={iconStyle} />,
-      title: "Đúng giờ",
-      description: "Cam kết đúng giờ khởi hành, không để khách hàng chờ đợi",
-    },
-    {
-      icon: <CreditCardOutlined style={iconStyle} />,
-      title: "Thanh toán linh hoạt",
+      icon: <AudioOutlined style={{ fontSize: 30, color: "#0f766e" }} />,
+      title: "Thuyết minh tự động theo món",
       description:
-        "Hỗ trợ nhiều hình thức thanh toán: thẻ, ví điện tử, tiền mặt",
+        "Khách quét QR và nghe nội dung món ăn bằng giọng đọc tự nhiên, không cần nhân viên giới thiệu thủ công.",
     },
     {
-      icon: <CustomerServiceOutlined style={iconStyle} />,
-      title: "Hỗ trợ 24/7",
-      description: "Đội ngũ chăm sóc khách hàng luôn sẵn sàng hỗ trợ bạn",
+      icon: <UserSwitchOutlined style={{ fontSize: 30, color: "#0f766e" }} />,
+      title: "Quản lý nội dung tập trung",
+      description:
+        "Chủ quán sửa tên món, mô tả, giọng đọc và ngôn ngữ trong dashboard owner có sẵn.",
     },
     {
-      icon: <TrophyOutlined style={iconStyle} />,
-      title: "Chất lượng cao",
-      description: "Xe hiện đại, ghế êm ái, điều hòa mát lạnh",
-    },
-    {
-      icon: <GlobalOutlined style={iconStyle} />,
-      title: "Mạng lưới rộng",
-      description: "Phủ sóng toàn quốc với nhiều tuyến xe đa dạng",
+      icon: <BarChartOutlined style={{ fontSize: 30, color: "#0f766e" }} />,
+      title: "Theo dõi hiệu quả",
+      description:
+        "Xem lượt nghe, khung giờ cao điểm và món được quan tâm để tối ưu menu nhanh hơn.",
     },
   ];
 
+  const steps = [
+    "Đăng ký demo 1-1 cho quán ăn",
+    "Chọn gói dịch vụ phù hợp quy mô",
+    "Nhập menu và kích hoạt thuyết minh",
+    "Vận hành và theo dõi trên trang quản lý",
+  ];
+
   return (
-    <div
-      style={{
-        position: "relative",
-        backgroundColor: "var(--color-background)",
-        color: "var(--color-text-primary)",
-      }}
-    >
+    <div style={{ background: "#f4f7f6", paddingBottom: 60 }}>
       <div
         style={{
-          position: "relative",
-          padding: "40px 0",
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "32px 20px 0",
         }}
       >
-        <PanelSection />
-      </div>
+        <Card
+          style={{
+            borderRadius: 20,
+            border: "none",
+            background:
+              "linear-gradient(135deg, rgba(15,118,110,0.95) 0%, rgba(22,163,74,0.9) 100%)",
+          }}
+          styles={{ body: { padding: "36px 30px" } }}
+        >
+          <Space direction="vertical" size={20} style={{ width: "100%" }}>
+            <Tag
+              style={{
+                width: "fit-content",
+                color: "#0f766e",
+                borderRadius: 999,
+                padding: "4px 12px",
+                fontWeight: 700,
+                border: "none",
+              }}
+            >
+              GIẢI PHÁP CHO CHỦ QUÁN ĂN
+            </Tag>
+            <Title level={2} style={{ color: "#fff", margin: 0 }}>
+              Hệ thống thuyết minh tự động giúp quán ăn phục vụ chuyên nghiệp hơn
+            </Title>
+            <Paragraph style={{ color: "rgba(255,255,255,0.9)", fontSize: 16, margin: 0 }}>
+              STREET FOOD GO giúp bạn biến menu thành trải nghiệm âm thanh: nhanh, dễ hiểu, giảm tải cho nhân viên và
+              tăng khả năng upsell món.
+            </Paragraph>
+            <Space wrap>
+              <Link to={PUBLIC_ROUTES.SEARCH_BOOKING}>
+                <Button type="primary" size="large" icon={<CheckCircleOutlined />}>
+                  Đăng ký demo
+                </Button>
+              </Link>
+              <Link to={PUBLIC_ROUTES.BOOKING}>
+                <Button size="large">Xem bảng giá</Button>
+              </Link>
+            </Space>
+          </Space>
+        </Card>
 
-      <div style={{ marginTop: 420 }}>
-        <PopularRoutes />
-      </div>
-
-      <div style={{ marginTop: 10 }}>
-        <SocialLinkPage />
-      </div>
-
-      <div style={{ margin: 10 }}>
-        <MapSolution />
-      </div>
-
-      <div style={{}}>
-        <BusStationCarousel />
-      </div>
-
-      <div
-        style={{
-          marginBottom: 50,
-          padding: "0 24px",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ marginBottom: "48px" }}>
-          <h2
-            style={{
-              fontSize: "32px",
-              color: "var(--color-primary-800)",
-              fontWeight: "bold",
-            }}
-          >
-            Tại sao chọn VietTravel?
-          </h2>
-          <p
-            style={{
-              fontSize: "1.1rem",
-              color: "var(--color-text-secondary)",
-              maxWidth: "600px",
-              margin: "0 auto",
-              lineHeight: 1.6,
-            }}
-          >
-            Chúng tôi cam kết mang đến cho bạn trải nghiệm di chuyển tốt nhất
-          </p>
-        </div>
-
-        <Row gutter={[32, 32]}>
-          {features.map((f, i) => (
-            <Col xs={24} sm={12} md={8} lg={8} key={i}>
-              <Card
-                hoverable
-                style={{
-                  textAlign: "center",
-                  borderRadius: "var(--radius-card)",
-                  border: "1px solid var(--color-border)",
-                  boxShadow: "var(--shadow-md)",
-                  transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                  height: "100%",
-                  backgroundColor: "var(--color-surface)",
-                }}
-                styles={{ body: { padding: 24 } }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-6px)";
-                  e.currentTarget.style.boxShadow = "var(--shadow-lg)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "var(--shadow-md)";
-                }}
-              >
-                <div style={{ marginBottom: 24 }}>{f.icon}</div>
-                <h3
-                  style={{
-                    fontSize: "1.25rem",
-                    fontWeight: 600,
-                    marginBottom: 12,
-                    color: "var(--color-text-primary)",
-                  }}
-                >
-                  {f.title}
-                </h3>
-                <p
-                  style={{
-                    color: "var(--color-text-secondary)",
-                    lineHeight: 1.6,
-                    margin: 0,
-                  }}
-                >
-                  {f.description}
-                </p>
+        <div style={{ marginTop: 28 }}>
+          <Row gutter={[20, 20]}>
+            <Col xs={24} md={8}>
+              <Card style={{ borderRadius: 14, height: "100%" }}>
+                <Text strong>
+                  <ShopOutlined /> 300+
+                </Text>
+                <Paragraph style={{ marginBottom: 0, marginTop: 8 }}>
+                  quán ăn đã sử dụng để đồng bộ thông tin menu tại điểm bán.
+                </Paragraph>
               </Card>
             </Col>
-          ))}
-        </Row>
+            <Col xs={24} md={8}>
+              <Card style={{ borderRadius: 14, height: "100%" }}>
+                <Text strong>
+                  <AudioOutlined /> 2 phút
+                </Text>
+                <Paragraph style={{ marginBottom: 0, marginTop: 8 }}>
+                  để cập nhật nội dung thuyết minh cho 1 món trong dashboard.
+                </Paragraph>
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card style={{ borderRadius: 14, height: "100%" }}>
+                <Text strong>
+                  <ThunderboltOutlined /> 24/7
+                </Text>
+                <Paragraph style={{ marginBottom: 0, marginTop: 8 }}>
+                  hệ thống sẵn sàng phát thuyết minh, không phụ thuộc ca làm.
+                </Paragraph>
+              </Card>
+            </Col>
+          </Row>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <Title level={3}>Giá trị bạn nhận được</Title>
+          <Row gutter={[20, 20]}>
+            {features.map((item) => (
+              <Col xs={24} md={8} key={item.title}>
+                <Card style={{ borderRadius: 14, height: "100%" }}>
+                  <div style={{ marginBottom: 12 }}>{item.icon}</div>
+                  <Title level={4}>{item.title}</Title>
+                  <Paragraph style={{ marginBottom: 0 }}>{item.description}</Paragraph>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          <Title level={3}>Quy trình bắt đầu</Title>
+          <Card style={{ borderRadius: 14 }}>
+            <Row gutter={[20, 20]}>
+              {steps.map((step, index) => (
+                <Col xs={24} sm={12} md={6} key={step}>
+                  <Card size="small" style={{ borderRadius: 12, textAlign: "center" }}>
+                    <Tag color="green" style={{ marginBottom: 10 }}>
+                      Bước {index + 1}
+                    </Tag>
+                    <Paragraph style={{ marginBottom: 0 }}>{step}</Paragraph>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </Card>
+        </div>
       </div>
     </div>
   );

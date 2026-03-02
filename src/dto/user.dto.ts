@@ -14,6 +14,15 @@ export interface CustomerProfile {
   phone: string;
   description: string;
   customerType: CustomerTypeDto;
+  // owner-specific fields (nullable)
+  shopName?: string;
+  shopLocation?: string;
+  narrationContent?: string;
+  subscription?: {
+    id?: string;
+    name?: string;
+    expires_at?: string;
+  };
 }
 export interface UserProfile {
   id: string;

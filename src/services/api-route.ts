@@ -23,6 +23,11 @@ export const API_ENDPOINTS = {
     UPDATE_PROFILE: "/user/profile",
     SETUP_CREDENTIALS: "/user/setup-credentials",
   },
+  SUBSCRIPTION: {
+    LIST: "/subscription-packages",
+    PURCHASE: (id: string) => `/subscription-packages/${id}/purchase`,
+    MY: "/subscription-packages/my-subscription",
+  },
   OAUTH: {
     GOOGLE: "/oauth2/authorization/google",
     CALLBACK: "/oauth/callback",

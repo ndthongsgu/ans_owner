@@ -1,18 +1,17 @@
-import NotificationBell from "@/components/notification/NotificationBell";
+﻿import NotificationBell from "@/components/notification/NotificationBell";
 import { useLogout } from "@/hooks/auth/auth";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useRouter } from "@/routes/hooks";
-import {
-  HistoryOutlined,
-  LogoutOutlined,
-  PhoneOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { LogoutOutlined, PhoneOutlined, UserOutlined } from "@ant-design/icons";
 import { Avatar, Button, Dropdown, message, Space, type MenuProps } from "antd";
 import { useRef, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { ENFlag, VNFlag } from "../assets/icons";
 import { PUBLIC_ROUTES, REQUIRE_AUTH_ROUTES } from "../routes/routes";
+
+type RoleAwareProfile = {
+  roles?: Array<{ code?: string | null }>;
+} | null | undefined;
 
 export default function AppHeader() {
   const {
@@ -24,13 +23,14 @@ export default function AppHeader() {
     profile,
   } = useAuth();
   const logoutMutation = useLogout();
-  // const [notifications] = useState(["Bạn có vé mới", "Khuyến mãi đặc biệt"]);
   const [language, setLanguage] = useState("vi");
   const headerRef = useRef<HTMLDivElement>(null);
-  const location = useLocation();
   const router = useRouter();
 
-  const isHomePage = location.pathname === PUBLIC_ROUTES.HOME;
+  const roleCodes = ((profile as RoleAwareProfile)?.roles ?? []).map(
+    (role) => role.code ?? ""
+  );
+  const isOwner = roleCodes.includes("OWNER");
 
   const handleLogin = () => router.push(PUBLIC_ROUTES.LOGIN);
   const handleRegister = () => router.push(PUBLIC_ROUTES.REGISTER);
@@ -38,35 +38,18 @@ export default function AppHeader() {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
-      message.success("Đăng xuất thành công");
-    } catch (error) {
-      // Even if API call fails, clear local state
+      message.success("Ðang xu?t thành công");
+    } catch {
       clearAuth();
-      message.info("Đã đăng xuất");
+      message.info("Ðã dang xu?t");
       router.push(PUBLIC_ROUTES.HOME);
     }
   };
 
-  const handleProfileClick = () =>
-    router.push(REQUIRE_AUTH_ROUTES.CUSTOMER_PROFILE);
-
-  const handleHistoryClick = () => {
-    router.push(REQUIRE_AUTH_ROUTES.BOOKING_HISTORY);
-  };
-
-  // Menu cho người dùng chưa đăng nhập
   const guestMenu: MenuProps = {
     items: [
-      {
-        key: "login",
-        label: "Đăng nhập",
-        icon: <UserOutlined />,
-      },
-      {
-        key: "register",
-        label: "Đăng ký",
-        icon: <UserOutlined />,
-      },
+      { key: "login", label: "Ðang nh?p", icon: <UserOutlined /> },
+      { key: "register", label: "Ðang ký", icon: <UserOutlined /> },
     ],
     onClick: ({ key }: { key: string }) => {
       if (key === "login") handleLogin();
@@ -74,7 +57,6 @@ export default function AppHeader() {
     },
   };
 
-  // Menu cho người dùng đã đăng nhập
   const userMenu: MenuProps = {
     items: [
       {
@@ -86,54 +68,37 @@ export default function AppHeader() {
           </div>
         ),
         icon: <UserOutlined />,
-        disabled: true, // This is just for display
+        disabled: true,
       },
-      {
-        type: "divider",
-      },
+      { type: "divider" },
       {
         key: "profileDetail",
-        label: "Thông tin cá nhân",
+        label: "Thông tin tài kho?n",
         icon: <UserOutlined />,
       },
-      // Nếu user có role "OWNER" hiển thị link tới dashboard chủ quán
-      ...( ( (profile as any)?.roles || [] ).some((r: any) => r.code === "OWNER")
+      ...(isOwner
         ? [
             {
               key: "ownerDashboard",
-              label: "Bảng chủ quán",
+              label: "Trang ch? quán",
               icon: <UserOutlined />,
             },
           ]
         : []),
-      {
-        key: "history",
-        label: "Lịch sử đặt vé",
-        icon: <HistoryOutlined />,
-      },
-      {
-        type: "divider",
-      },
+      { type: "divider" },
       {
         key: "logout",
-        label: "Đăng xuất",
+        label: "Ðang xu?t",
         icon: <LogoutOutlined />,
         danger: true,
       },
     ],
     onClick: ({ key }: { key: string }) => {
-      if (key === "profileDetail") handleProfileClick();
+      if (key === "profileDetail") router.push(REQUIRE_AUTH_ROUTES.CUSTOMER_PROFILE);
       if (key === "ownerDashboard") router.push(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
-      if (key === "history") handleHistoryClick();
       if (key === "logout") handleLogout();
     },
   };
-
-  // const notificationMenu = {
-  //   items: notifications.length
-  //     ? notifications.map((item, index) => ({ key: index, label: item }))
-  //     : [{ key: "none", label: "Không có thông báo" }],
-  // };
 
   const languages = [
     { key: "vi", label: "Tiếng Việt", flag: VNFlag },
@@ -151,12 +116,16 @@ export default function AppHeader() {
   }));
 
   const navItems = [
-    { path: PUBLIC_ROUTES.HOME, label: "Trang chủ" },
-    { path: PUBLIC_ROUTES.BOOKING, label: "Đặt vé" },
-    { path: PUBLIC_ROUTES.SEARCH_BOOKING, label: "Chuyến đi của tôi" },
+    { path: PUBLIC_ROUTES.HOME, label: "Tổng quan" },
+    { path: PUBLIC_ROUTES.ABOUT, label: "Giải pháp" },
+    { path: PUBLIC_ROUTES.BOOKING, label: "Bảng giá" },
+    { path: PUBLIC_ROUTES.SEARCH_BOOKING, label: "Đăng ký demo" },
     { path: PUBLIC_ROUTES.CONTACT, label: "Liên hệ" },
-    { path: PUBLIC_ROUTES.ABOUT, label: "Giới thiệu" },
   ];
+
+  if (isAuthenticated && isOwner) {
+    navItems.push({ path: REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD, label: "Trang quản lý" });
+  }
 
   return (
     <div
@@ -165,7 +134,7 @@ export default function AppHeader() {
         background: "var(--color-primary-800)",
         color: "var(--color-text-inverse)",
         position: "relative",
-        height: isHomePage ? 300 : 150,
+        height: 140,
       }}
     >
       <div
@@ -219,7 +188,7 @@ export default function AppHeader() {
             }}
           >
             <PhoneOutlined />
-            Hotline hỗ trợ chủ quán: 1900 5678
+            Hotline tư vấn: 1900 5678
           </a>
         </Space>
 
@@ -248,7 +217,7 @@ export default function AppHeader() {
               textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
             }}
           >
-            Street Food Go
+            STREET FOOD GO
           </span>
         </Link>
 
@@ -260,25 +229,6 @@ export default function AppHeader() {
             justifyContent: "flex-end",
           }}
         >
-          {/* <Dropdown menu={notificationMenu} placement="bottomRight">
-            <Badge count={notifications.length}>
-              <BellOutlined
-                style={{
-                  fontSize: 22,
-                  color: "var(--color-accent-100)",
-                  cursor: "pointer",
-                  transition: "var(--transition-base)",
-                }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.color = "var(--color-accent-400)")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.color = "var(--color-accent-100)")
-                }
-              />
-            </Badge>
-          </Dropdown> */}
-
           {isAuthenticated ? <NotificationBell /> : undefined}
 
           <Dropdown
@@ -326,7 +276,7 @@ export default function AppHeader() {
               borderBottom: isActive
                 ? "3px solid var(--color-accent-400)"
                 : "3px solid transparent",
-              padding: "8px 50px",
+              padding: "8px 34px",
               transition: "var(--transition-base)",
             })}
           >
@@ -337,3 +287,4 @@ export default function AppHeader() {
     </div>
   );
 }
+

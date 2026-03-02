@@ -21,13 +21,7 @@ export const PUBLIC_ROUTES = {
   ABOUT: "/about",
   BOOKING: "/booking",
   CONTACT: "/contact",
-  CAR: "/car",
-  TRIP: "/trip",
   SEARCH_BOOKING: "/search-booking",
-  BOOKING_RESULT: "/search-booking/result-search",
-  PAYMENT: "/payment",
-  RESULT_PAYMENT: "/payment/result-booking",
-  VNPAY_RETURN: "/payment/vnpay-return",
 };
 
 export type RequireAuthRouteKeys = keyof typeof REQUIRE_AUTH_ROUTES;
@@ -56,10 +50,5 @@ export const MAIN_NAVIGATION_ROUTES = {
   ABOUT: PUBLIC_ROUTES.ABOUT,
   BOOKING: PUBLIC_ROUTES.BOOKING,
   CONTACT: PUBLIC_ROUTES.CONTACT,
-  CAR: PUBLIC_ROUTES.CAR,
-  TRIP: PUBLIC_ROUTES.TRIP,
   SEARCH_BOOKING: PUBLIC_ROUTES.SEARCH_BOOKING,
-  BOOKING_RESULT: PUBLIC_ROUTES.BOOKING_RESULT,
-  PAYMENT: PUBLIC_ROUTES.PAYMENT,
-  RESULT_PAYMENT: PUBLIC_ROUTES.RESULT_PAYMENT,
 };

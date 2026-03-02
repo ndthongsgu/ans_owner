@@ -4,11 +4,13 @@ import NarrationEditor from "../../components/owner/NarrationEditor";
 import LocationEditor from "../../components/owner/LocationEditor";
 import PackageSelector from "../../components/owner/PackageSelector";
 import { useGetCurrentUser } from "@/hooks/user";
+import { useMySubscription } from "@/hooks/subscription";
 
 const { Title, Text } = Typography;
 
 export default function OwnerDashboard() {
   const { data: user } = useGetCurrentUser();
+  const { data: mySub } = useMySubscription();
   const [showNarration, setShowNarration] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
   const [showPackages, setShowPackages] = useState(false);
@@ -16,6 +18,11 @@ export default function OwnerDashboard() {
   const shopName = (user?.customer as any)?.shopName || "Chưa có tên quán";
   const shopLocation = (user?.customer as any)?.shopLocation || "Chưa có địa chỉ";
   const narration = (user?.customer as any)?.narrationContent || "Chưa có nội dung thuyết minh";
+
+  const subscriptionName =
+    (mySub as any)?.packageName || (user?.customer as any)?.subscription?.name || "Chưa đăng ký";
+  const expiresAt = (mySub as any)?.expiresAt || (user?.customer as any)?.subscription_expires_at;
+  const expirationText = expiresAt ? new Date(expiresAt).toLocaleDateString() : null;
 
   return (
     <div style={{ padding: 24 }}>
@@ -48,7 +55,12 @@ export default function OwnerDashboard() {
         <Card title="Gói dịch vụ">
           <div>
             <Text>
-              Gói hiện tại: <strong>{(user?.customer as any)?.subscription?.name || "Chưa đăng ký"}</strong>
+              Gói hiện tại: <strong>{subscriptionName}</strong>
+              {expirationText && (
+                <span>
+                  {' '} (hết hạn: <strong>{expirationText}</strong>)
+                </span>
+              )}
             </Text>
           </div>
           <Divider />

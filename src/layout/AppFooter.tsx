@@ -7,6 +7,8 @@ import {
   YoutubeOutlined,
 } from "@ant-design/icons";
 import { Space } from "antd";
+import { Link } from "react-router-dom";
+import { PUBLIC_ROUTES } from "@/routes/routes";
 
 export default function AppFooter() {
   return (
@@ -31,7 +33,7 @@ export default function AppFooter() {
           margin: "0 auto",
         }}
       >
-        <div style={{ flex: "1 1 260px", minWidth: 240 }}>
+        <div style={{ flex: "1 1 300px", minWidth: 260 }}>
           <p
             style={{
               color: "#007a3d",
@@ -40,7 +42,7 @@ export default function AppFooter() {
               fontSize: "15px",
             }}
           >
-            TRUNG TÂM TỔNG ĐÀI & CSKH
+            TỔNG ĐÀI TƯ VẤN CHỦ QUÁN
           </p>
           <p
             style={{
@@ -50,7 +52,7 @@ export default function AppFooter() {
               margin: "0 0 16px",
             }}
           >
-            1900 1234
+            1900 5678
           </p>
 
           <p
@@ -61,20 +63,20 @@ export default function AppFooter() {
               fontSize: "15px",
             }}
           >
-            CÔNG TY DU LỊCH VIETTRAVEL
+            STREET FOOD GO SERVICE
           </p>
           <p style={{ margin: 0 }}>
-            <EnvironmentOutlined /> 123 Lê Lợi, Quận 1, TP.HCM
+            <EnvironmentOutlined /> 88 Nguyễn Huệ, Quận 1, TP.HCM
           </p>
           <p style={{ margin: 0 }}>
-            <MailOutlined /> info@xeviet.vn
+            <MailOutlined /> hello@streetfoodgo.vn
           </p>
           <p style={{ margin: 0 }}>
-            <PhoneOutlined /> 028 3838 6852
+            <PhoneOutlined /> 028 9999 8888
           </p>
         </div>
 
-        <div style={{ flex: "1 1 240px", minWidth: 200 }}>
+        <div style={{ flex: "1 1 220px", minWidth: 200 }}>
           <p
             style={{
               color: "#007a3d",
@@ -83,31 +85,37 @@ export default function AppFooter() {
               fontSize: "15px",
             }}
           >
-            TẢI ỨNG DỤNG VIETTRAVEL
+            LIÊN KẾT NHANH
           </p>
           <Space direction="vertical" size="small">
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg"
-              alt="CH Play"
-              style={{ height: 40, cursor: "pointer" }}
-            />
-            <img
-              src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-              alt="App Store"
-              style={{ height: 40, cursor: "pointer" }}
-            />
+            <Link to={PUBLIC_ROUTES.HOME} style={{ color: "#333" }}>
+              Tổng quan sản phẩm
+            </Link>
+            <Link to={PUBLIC_ROUTES.ABOUT} style={{ color: "#333" }}>
+              Cách hệ thống hoạt động
+            </Link>
+            <Link to={PUBLIC_ROUTES.BOOKING} style={{ color: "#333" }}>
+              Bảng giá dịch vụ
+            </Link>
+            <Link to={PUBLIC_ROUTES.SEARCH_BOOKING} style={{ color: "#333" }}>
+              Đăng ký demo
+            </Link>
+            <Link to={PUBLIC_ROUTES.CONTACT} style={{ color: "#333" }}>
+              Hỗ trợ kỹ thuật
+            </Link>
           </Space>
+        </div>
 
+        <div style={{ flex: "1 1 220px", minWidth: 200 }}>
           <p
             style={{
               color: "#007a3d",
               fontWeight: 600,
-              marginTop: 20,
               marginBottom: 10,
               fontSize: "15px",
             }}
           >
-            KẾT NỐI VỚI CHÚNG TÔI
+            KÊNH KẾT NỐI
           </p>
           <Space size="large">
             <a
@@ -127,7 +135,7 @@ export default function AppFooter() {
               <YoutubeOutlined />
             </a>
             <a
-              href="https://xeviet.vn"
+              href="https://streetfoodgo.vn"
               target="_blank"
               rel="noreferrer"
               style={{ color: "#333", fontSize: 20 }}
@@ -135,113 +143,23 @@ export default function AppFooter() {
               <GlobalOutlined />
             </a>
           </Space>
-        </div>
 
-        <div style={{ flex: "1 1 200px", minWidth: 180 }}>
           <p
             style={{
               color: "#007a3d",
               fontWeight: 600,
+              marginTop: 20,
               marginBottom: 10,
               fontSize: "15px",
             }}
           >
-            DỊCH VỤ XE VIETTRAVEL
+            DỊCH VỤ
           </p>
-          <ul
-            style={{
-              listStyleType: "disc",
-              paddingLeft: 18,
-              margin: 0,
-              color: "#333",
-            }}
-          >
-            <li>
-              <a
-                href="#vechungtoi"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Về chúng tôi
-              </a>
-            </li>
-            <li>
-              <a
-                href="#lichtrinh"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Lịch trình
-              </a>
-            </li>
-            <li>
-              <a
-                href="#tuyendung"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Tuyển dụng
-              </a>
-            </li>
-            <li>
-              <a
-                href="#tintuc"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Tin tức & sự kiện
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div style={{ flex: "1 1 200px", minWidth: 180 }}>
-          <p
-            style={{
-              color: "#007a3d",
-              fontWeight: 600,
-              marginBottom: 10,
-              fontSize: "15px",
-            }}
-          >
-            HỖ TRỢ KHÁCH HÀNG
-          </p>
-          <ul
-            style={{
-              listStyleType: "disc",
-              paddingLeft: 18,
-              margin: 0,
-              color: "#333",
-            }}
-          >
-            <li>
-              <a
-                href="#tracuu"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Tra cứu vé xe
-              </a>
-            </li>
-            <li>
-              <a
-                href="#dieukhoan"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Điều khoản sử dụng
-              </a>
-            </li>
-            <li>
-              <a
-                href="#huongdan"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Hướng dẫn đặt vé online
-              </a>
-            </li>
-            <li>
-              <a
-                href="#napthe"
-                style={{ color: "#333", textDecoration: "none" }}
-              >
-                Hướng dẫn nạp tiền
-              </a>
-            </li>
+          <ul style={{ listStyleType: "disc", paddingLeft: 18, margin: 0 }}>
+            <li>Thuyết minh món ăn tự động</li>
+            <li>Đọc menu bằng nhiều giọng nói</li>
+            <li>Quản lý nội dung tại dashboard</li>
+            <li>Thống kê lượt nghe theo khu vực</li>
           </ul>
         </div>
       </div>
@@ -256,8 +174,7 @@ export default function AppFooter() {
           fontSize: "13px",
         }}
       >
-        © {new Date().getFullYear()} Công ty Du Lịch VietTravel — Giải pháp đặt
-        vé xe toàn diện cho bạn.
+        {("(c) " + new Date().getFullYear() + " STREET FOOD GO - Giải pháp thuyết minh tự động cho quán ăn.")}
       </div>
     </div>
   );

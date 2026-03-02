@@ -114,10 +114,6 @@ const PublicRoutes = [
         element: PUBLIC_SCREENS[PUBLIC_ROUTES.SEARCH_BOOKING],
       },
       {
-        path: PUBLIC_ROUTES.BOOKING_RESULT,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.BOOKING_RESULT],
-      },
-      {
         path: PUBLIC_ROUTES.BOOKING,
         element: PUBLIC_SCREENS[PUBLIC_ROUTES.BOOKING],
       },
@@ -128,18 +124,6 @@ const PublicRoutes = [
       {
         path: PUBLIC_ROUTES.CONTACT,
         element: PUBLIC_SCREENS[PUBLIC_ROUTES.CONTACT],
-      },
-      {
-        path: PUBLIC_ROUTES.PAYMENT,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.PAYMENT],
-      },
-      {
-        path: PUBLIC_ROUTES.RESULT_PAYMENT,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.RESULT_PAYMENT],
-      },
-      {
-        path: PUBLIC_ROUTES.VNPAY_RETURN,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.VNPAY_RETURN],
       },
     ],
   },

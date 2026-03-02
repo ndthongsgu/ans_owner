@@ -1,6 +1,59 @@
 import type { BaseDto } from "./base.dto";
-import type { Car, CarResponse } from "./car.dto";
-import type { Route, RouteResponse } from "./route.dto";
+
+export interface RouteResponse {
+  id: string;
+  startLocation: string;
+  endLocation: string;
+  estimatedDuration?: number;
+  distanceKm?: number;
+  description?: string;
+}
+
+export interface Route extends BaseDto {
+  startLocation: string;
+  endLocation: string;
+  distanceKm: number;
+  estimatedDuration: number;
+}
+
+export interface CarResponse {
+  id: string;
+  code: string;
+  licensePlate: string;
+  carType?: CarType;
+  seatCount?: number;
+  carSeats?: CarSeatResponse[];
+}
+
+export interface CarSeatResponse {
+  id: string;
+  seatNumber: string;
+  seatPosition: string;
+  isBooked?: boolean;
+  bookingSeats?: BookingSeatResponse[];
+  bookedStatuses?: string[];
+}
+
+export interface CarType extends BaseDto {
+  code: string;
+  name: string;
+  description: string;
+  seatCount: number;
+}
+
+export interface CarSeat extends BaseDto {
+  seatNumber: string;
+  seatPosition: string;
+  isBooked: boolean;
+  bookedStatuses?: string[];
+}
+
+export interface Car extends BaseDto {
+  code: string;
+  carType: CarType;
+  licensePlate: string;
+  carSeats: CarSeat[];
+}
 
 export interface TripUserQuery {
   startLocation?: string;

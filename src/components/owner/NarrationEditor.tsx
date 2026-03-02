@@ -11,7 +11,7 @@ export default function NarrationEditor({ open, onClose, initialValue }: any) {
   }, [open]);
 
   const onFinish = async (values: any) => {
-    await mutation.mutateAsync({ narrationContent: values.narrationContent });
+    await mutation.mutateAsync({ narrationContent: values.narrationContent } as any);
     onClose();
   };
 
@@ -23,7 +23,7 @@ export default function NarrationEditor({ open, onClose, initialValue }: any) {
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={mutation.isLoading}>Lưu</Button>
+          <Button type="primary" htmlType="submit" loading={(mutation as any).isLoading}>Lưu</Button>
         </Form.Item>
       </Form>
     </Modal>

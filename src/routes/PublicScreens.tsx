@@ -16,18 +16,8 @@ const AboutScreen = lazy(() => import("../pages/publics/about"));
 const SearchBookingScreen = lazy(
   () => import("../pages/publics/search-booking")
 );
-const BookingResultScreen = lazy(
-  () => import("../pages/publics/search-booking/result-search")
-);
 const BookingScreen = lazy(() => import("../pages/publics/booking"));
 const ContactScreen = lazy(() => import("../pages/publics/contact"));
-const PaymentScreen = lazy(() => import("../pages/publics/payment"));
-const ResultPaymentScreen = lazy(
-  () => import("../pages/publics/payment/result-booking")
-);
-const VNPayReturnPage = lazy(
-  () => import("../pages/publics/payment/vnpay-return")
-);
 
 export const PUBLIC_SCREENS = {
   [PUBLIC_ROUTES.HOME]: <HomeScreen />,
@@ -39,10 +29,6 @@ export const PUBLIC_SCREENS = {
   [PUBLIC_ROUTES.RESET_PASSWORD]: <ResetPasswordScreen />,
   [PUBLIC_ROUTES.OAUTH_CALLBACK]: <OAuthCallbackPage />,
   [PUBLIC_ROUTES.SEARCH_BOOKING]: <SearchBookingScreen />,
-  [PUBLIC_ROUTES.BOOKING_RESULT]: <BookingResultScreen />,
   [PUBLIC_ROUTES.BOOKING]: <BookingScreen />,
   [PUBLIC_ROUTES.CONTACT]: <ContactScreen />,
-  [PUBLIC_ROUTES.PAYMENT]: <PaymentScreen />,
-  [PUBLIC_ROUTES.RESULT_PAYMENT]: <ResultPaymentScreen />,
-  [PUBLIC_ROUTES.VNPAY_RETURN]: <VNPayReturnPage />,
 };
