@@ -1,12 +1,12 @@
 import { Button, Card, List, Modal, Tag, message, Spin } from "antd";
 import { useState } from "react";
 import QrPaymentModal from "@/components/payment/QrPaymentModal";
-import { useListPackages, usePurchasePackage } from "@/hooks/subscription";
+import { useOwnerPackages, usePurchaseOwnerPackage } from "@/hooks/owner";
 import type { PackageDto } from "@/dto/subscription.dto";
 
 export default function PackageSelector({ open, onClose }: any) {
-  const { data: packages, isLoading } = useListPackages();
-  const purchaseMutation = usePurchasePackage();
+  const { data: packages, isLoading } = useOwnerPackages();
+  const purchaseMutation = usePurchaseOwnerPackage();
   const [current, setCurrent] = useState<PackageDto | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
 
@@ -23,7 +23,13 @@ export default function PackageSelector({ open, onClose }: any) {
   };
 
   return (
-    <Modal open={open} onCancel={onClose} footer={null} width={640} title="Chọn gói dịch vụ">
+    <Modal
+      open={open}
+      onCancel={onClose}
+      footer={null}
+      width={640}
+      title="Chọn gói dịch vụ"
+    >
       {isLoading ? (
         <div style={{ textAlign: "center", padding: 24 }}>
           <Spin />
@@ -34,12 +40,20 @@ export default function PackageSelector({ open, onClose }: any) {
           renderItem={(p: any) => (
             <List.Item>
               <Card style={{ width: "100%" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
                   <div>
                     <div style={{ fontWeight: 600 }}>
                       {p.name}{" "}
                       <Tag color="green">
-                        {p.price === 0 ? "Miễn phí" : p.price.toLocaleString() + "đ"}
+                        {p.price === 0
+                          ? "Miễn phí"
+                          : p.price.toLocaleString() + "đ"}
                       </Tag>
                     </div>
                     <div style={{ color: "#666" }}>{p.description}</div>
@@ -54,7 +68,10 @@ export default function PackageSelector({ open, onClose }: any) {
                   <div>
                     <Button
                       type="primary"
-                      loading={(purchaseMutation as any).isLoading && current?.id === p.id}
+                      loading={
+                        (purchaseMutation as any).isPending &&
+                        current?.id === p.id
+                      }
                       onClick={() => {
                         setCurrent(p);
                         setQrOpen(true);

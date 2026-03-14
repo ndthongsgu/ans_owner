@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import { Space } from "antd";
 import { Link } from "react-router-dom";
-import { PUBLIC_ROUTES } from "@/routes/routes";
+import { PUBLIC_ROUTES, REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 
 export default function AppFooter() {
   return (
@@ -89,19 +89,22 @@ export default function AppFooter() {
           </p>
           <Space direction="vertical" size="small">
             <Link to={PUBLIC_ROUTES.HOME} style={{ color: "#333" }}>
-              Tổng quan sản phẩm
+              Bảng điều khiển
             </Link>
-            <Link to={PUBLIC_ROUTES.ABOUT} style={{ color: "#333" }}>
-              Cách hệ thống hoạt động
+            <Link to={PUBLIC_ROUTES.LOGIN} style={{ color: "#333" }}>
+              Đăng nhập quản trị
             </Link>
-            <Link to={PUBLIC_ROUTES.BOOKING} style={{ color: "#333" }}>
-              Bảng giá dịch vụ
+            <Link
+              to={REQUIRE_AUTH_ROUTES.OWNER_PROFILE}
+              style={{ color: "#333" }}
+            >
+              Hồ sơ chủ quán
             </Link>
-            <Link to={PUBLIC_ROUTES.SEARCH_BOOKING} style={{ color: "#333" }}>
-              Đăng ký demo
-            </Link>
-            <Link to={PUBLIC_ROUTES.CONTACT} style={{ color: "#333" }}>
-              Hỗ trợ kỹ thuật
+            <Link
+              to={REQUIRE_AUTH_ROUTES.CHANGE_PASSWORD}
+              style={{ color: "#333" }}
+            >
+              Đổi mật khẩu
             </Link>
           </Space>
         </div>
@@ -174,7 +177,9 @@ export default function AppFooter() {
           fontSize: "13px",
         }}
       >
-        {("(c) " + new Date().getFullYear() + " STREET FOOD GO - Giải pháp thuyết minh tự động cho quán ăn.")}
+        {"(c) " +
+          new Date().getFullYear() +
+          " STREET FOOD GO - Giải pháp thuyết minh tự động cho quán ăn."}
       </div>
     </div>
   );

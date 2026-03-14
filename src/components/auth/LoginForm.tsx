@@ -6,15 +6,10 @@ import { Alert, Button, Checkbox, Divider, Form, Input } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 type FieldType = {
-  username: string; // Used for both phone and admin username
+  username: string; // Phone number or email
   password: string;
   remember?: boolean;
-  loginAsAdmin?: boolean;
 };
-
-interface LoginFormProps {
-  adminMode?: boolean;
-}
 
 // Custom style for Inputs/Passwords to match the old design
 const inputStyle = {
@@ -48,7 +43,7 @@ export const googleButtonStyle = {
   height: "auto", // Allow padding to determine height
 };
 
-export default function LoginForm({ adminMode = false }: LoginFormProps) {
+export default function LoginForm() {
   const { showLoading, hideLoading } = useLoading();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -61,7 +56,6 @@ export default function LoginForm({ adminMode = false }: LoginFormProps) {
       await loginMutation.mutateAsync({
         username: values.username,
         password: values.password,
-        loginAsAdmin: values.loginAsAdmin,
       });
     } finally {
       hideLoading();
@@ -69,21 +63,16 @@ export default function LoginForm({ adminMode = false }: LoginFormProps) {
   };
 
   return (
-    // FIX: Remove inline styles from the div, as the container styles were moved to LoginPage.tsx
-    // The previous container had its style injected by the parent component (LoginScreen/LoginPage),
-    // so this component only needs to provide the content.
     <div>
       <h2
         style={{
           textAlign: "center",
-          // FIX: Use old margin style
           marginBottom: "32px",
-          fontSize: "24px", // Match old h2 level 2
-          color: "rgba(0, 0, 0, 0.85)", // Default AntD title color
+          fontSize: "24px",
+          color: "rgba(0, 0, 0, 0.85)",
         }}
       >
-        {adminMode ? "Đăng nhập quản trị" : "Đăng nhập"}{" "}
-        {/* Changed to "Đăng nhập" for customer */}
+        Đăng nhập
       </h2>
 
       {message && (
@@ -111,31 +100,23 @@ export default function LoginForm({ adminMode = false }: LoginFormProps) {
         autoComplete="off"
         initialValues={{
           remember: true,
-          loginAsAdmin: adminMode,
         }}
       >
         <Form.Item<FieldType>
-          label={adminMode ? "Tên đăng nhập (Admin)" : "Số điện thoại"}
+          label="Tên đăng nhập (Số điện thoại hoặc email)"
           name="username"
           rules={[
             {
               required: true,
-              message: `Vui lòng nhập ${
-                adminMode ? "tên đăng nhập" : "số điện thoại"
-              }!`,
+              message: "Vui lòng nhập tên đăng nhập!",
             },
-            // NEW: Add phone number pattern validation for customer mode
-            ...(!adminMode
-              ? [{ pattern: /^\d+$/, message: "Số điện thoại chỉ gồm chữ số!" }]
-              : []),
           ]}
         >
           <Input
             size="large"
             style={inputStyle}
-            placeholder={
-              adminMode ? "Nhập tên đăng nhập" : "Nhập số điện thoại"
-            }
+            placeholder="Nhập tên đăng nhập"
+            autoComplete="off"
           />
         </Form.Item>
 
@@ -148,15 +129,13 @@ export default function LoginForm({ adminMode = false }: LoginFormProps) {
             size="large"
             style={inputStyle}
             placeholder="Nhập mật khẩu"
+            autoComplete="off"
           />
         </Form.Item>
 
-        {/* Remember me checkbox is kept for customer mode; omitted for admin mode */}
-        {!adminMode && (
-          <Form.Item<FieldType> name="remember" valuePropName="checked">
-            <Checkbox>Nhớ mật khẩu</Checkbox>
-          </Form.Item>
-        )}
+        <Form.Item<FieldType> name="remember" valuePropName="checked">
+          <Checkbox>Nhớ mật khẩu</Checkbox>
+        </Form.Item>
 
         <Form.Item>
           <Button
@@ -171,63 +150,54 @@ export default function LoginForm({ adminMode = false }: LoginFormProps) {
         </Form.Item>
       </Form>
 
-      {/* Social Login and Links - ONLY for customer mode */}
-      {!adminMode && (
-        <>
-          <Divider style={{ margin: "24px 0" }}>Hoặc đăng nhập với</Divider>
+      <Divider style={{ margin: "24px 0" }}>Hoặc đăng nhập với</Divider>
+      <Button
+        onClick={handleGoogleLogin}
+        size="large"
+        style={googleButtonStyle}
+      >
+        <GoogleOutlined
+          style={{ fontSize: "18px", marginRight: "8px", color: "#DB4437" }}
+        />
+        Tiếp tục với Google
+      </Button>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignContent: "center",
+          flexDirection: "column",
+          alignItems: "center",
+          fontSize: "14px",
+          marginTop: "16px",
+        }}
+      >
+        <Button
+          type="link"
+          onClick={() => navigate("/forgot-password")}
+          style={{
+            color: "#1890ff",
+            textDecoration: "none",
+            display: "block",
+            marginBottom: "8px",
+            padding: 0,
+          }}
+        >
+          Quên mật khẩu?
+        </Button>
+
+        <div style={{ color: "#666" }}>
+          Chưa có tài khoản?{" "}
           <Button
-            onClick={handleGoogleLogin}
-            size="large"
-            style={googleButtonStyle}
+            type="link"
+            onClick={() => navigate("/register")}
+            style={{ color: "#1890ff", textDecoration: "none", padding: 0 }}
           >
-            {/* You will need to import the actual Google SVG/Image path */}
-            {/* <img src={Google} alt="Google" style={{ width: "20px", height: "20px", marginRight: "8px" }} /> */}
-            <GoogleOutlined
-              style={{ fontSize: "18px", marginRight: "8px", color: "#DB4437" }}
-            />
-            Tiếp tục với Google
+            Đăng ký ngay
           </Button>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignContent: "center",
-              flexDirection: "column",
-              alignItems: "center",
-              fontSize: "14px",
-              marginTop: "16px",
-            }}
-          >
-            {/* Forgot Password Link */}
-            <Button
-              type="link"
-              onClick={() => navigate("/forgot-password")}
-              style={{
-                color: "#1890ff",
-                textDecoration: "none",
-                display: "block",
-                marginBottom: "8px",
-                padding: 0,
-              }}
-            >
-              Quên mật khẩu?
-            </Button>
-
-            {/* Register Link */}
-            <div style={{ color: "#666" }}>
-              Chưa có tài khoản?{" "}
-              <Button
-                type="link"
-                onClick={() => navigate("/register")}
-                style={{ color: "#1890ff", textDecoration: "none", padding: 0 }}
-              >
-                Đăng ký ngay
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

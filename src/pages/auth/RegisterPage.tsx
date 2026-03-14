@@ -1,19 +1,22 @@
 import { googleButtonStyle } from "@/components/auth/LoginForm";
 import { useRegister } from "@/hooks/auth/auth";
+import { useToast } from "@/hooks/layout/useToast";
 import { PUBLIC_ROUTES } from "@/routes/routes";
 import { handleGoogleLogin } from "@/services/other";
 import { GoogleOutlined } from "@ant-design/icons";
 import { Alert, Button, Divider, Form, Input, Typography } from "antd";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const { Title } = Typography;
 
 function RegisterPageForm() {
   const registerMutation = useRegister();
+  const showToast = useToast();
   const [form] = Form.useForm();
+  const navigate = useNavigate();
 
   const handleSubmit = async (values: {
-    name: string;
+    full_name: string;
     email: string;
     phone: string;
     password: string;
@@ -21,13 +24,25 @@ function RegisterPageForm() {
   }) => {
     try {
       await registerMutation.mutateAsync({
-        name: values.name,
+        full_name: values.full_name,
         email: values.email,
         phone: values.phone,
         password: values.password,
       });
-    } catch (error) {
-      // Error handled by mutation
+      showToast({
+        title: "Đăng ký thành công",
+        message: "Bạn có thể đăng nhập ngay bây giờ.",
+        type: "success",
+      });
+      setTimeout(() => {
+        navigate(PUBLIC_ROUTES.LOGIN);
+      }, 2000);
+    } catch (error: any) {
+      showToast({
+        title: "Đăng ký thất bại",
+        message: error?.message || "Có lỗi xảy ra, vui lòng thử lại.",
+        type: "error",
+      });
     }
   };
 
@@ -49,14 +64,14 @@ function RegisterPageForm() {
         Đăng ký
       </Title>
 
-      {registerMutation.isError && (
+      {/* {registerMutation.isError && (
         <Alert
           message={registerMutation.error.message}
           type="error"
           showIcon
           style={{ marginBottom: 6 }}
         />
-      )}
+      )} */}
 
       <Form
         form={form}
@@ -66,7 +81,7 @@ function RegisterPageForm() {
       >
         <Form.Item
           label="Họ và tên"
-          name="name"
+          name="full_name"
           rules={[{ required: true, message: "Vui lòng nhập họ và tên!" }]}
         >
           <Input
@@ -132,7 +147,7 @@ function RegisterPageForm() {
                   return Promise.resolve();
                 }
                 return Promise.reject(
-                  new Error("Mật khẩu xác nhận không khớp!")
+                  new Error("Mật khẩu xác nhận không khớp!"),
                 );
               },
             }),

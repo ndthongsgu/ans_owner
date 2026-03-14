@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Alert, Spin } from "antd";
 import { useAuthStore } from "@/hooks/auth/useAuthStore";
+import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 
 export default function OAuthCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -10,15 +11,15 @@ export default function OAuthCallbackPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
+    const accessToken = searchParams.get("accessToken");
+    const refreshToken = searchParams.get("refreshToken");
 
     if (accessToken && refreshToken) {
       setTokens(accessToken, refreshToken);
-      navigate('/');
+      navigate(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
     } else {
-      setError('Đăng nhập thất bại. Vui lòng thử lại.');
-      setTimeout(() => navigate('/login'), 3000);
+      setError("Đăng nhập thất bại. Vui lòng thử lại.");
+      setTimeout(() => navigate("/login"), 3000);
     }
   }, [searchParams, navigate, setTokens]);
 

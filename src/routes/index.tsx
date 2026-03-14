@@ -24,14 +24,6 @@ const RequireAuthRoutes = [
     ),
     children: [
       {
-        path: REQUIRE_AUTH_ROUTES.CUSTOMER_PROFILE,
-        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.CUSTOMER_PROFILE],
-      },
-      {
-        path: REQUIRE_AUTH_ROUTES.PROFILE_SETUP,
-        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.PROFILE_SETUP],
-      },
-      {
         path: REQUIRE_AUTH_ROUTES.CHANGE_PASSWORD,
         element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.CHANGE_PASSWORD],
       },
@@ -54,6 +46,24 @@ const RequireAuthRoutes = [
       {
         path: REQUIRE_AUTH_ROUTES.OWNER_PROFILE,
         element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_PROFILE],
+      },
+      {
+        path: REQUIRE_AUTH_ROUTES.OWNER_STALL,
+        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_STALL],
+      },
+      {
+        path: REQUIRE_AUTH_ROUTES.OWNER_STALL_CONTENT,
+        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_STALL_CONTENT],
+      },
+      {
+        path: REQUIRE_AUTH_ROUTES.OWNER_SUBSCRIPTION_PACKAGE,
+        element:
+          REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_SUBSCRIPTION_PACKAGE],
+      },
+      {
+        path: REQUIRE_AUTH_ROUTES.OWNER_ANALYTICS_INTERACTION,
+        element:
+          REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_ANALYTICS_INTERACTION],
       },
     ],
   },
@@ -108,22 +118,6 @@ const PublicRoutes = [
       {
         index: true,
         element: PUBLIC_SCREENS[PUBLIC_ROUTES.HOME],
-      },
-      {
-        path: PUBLIC_ROUTES.SEARCH_BOOKING,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.SEARCH_BOOKING],
-      },
-      {
-        path: PUBLIC_ROUTES.BOOKING,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.BOOKING],
-      },
-      {
-        path: PUBLIC_ROUTES.ABOUT,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.ABOUT],
-      },
-      {
-        path: PUBLIC_ROUTES.CONTACT,
-        element: PUBLIC_SCREENS[PUBLIC_ROUTES.CONTACT],
       },
     ],
   },

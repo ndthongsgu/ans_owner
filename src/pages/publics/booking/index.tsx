@@ -1,4 +1,8 @@
-import { CheckOutlined, CrownOutlined, RocketOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  CrownOutlined,
+  RocketOutlined,
+} from "@ant-design/icons";
 import { Button, Card, Col, Row, Space, Tag, Typography } from "antd";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useRouter } from "@/routes/hooks";
@@ -6,9 +10,12 @@ import { PUBLIC_ROUTES, REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 
 const { Title, Paragraph, Text } = Typography;
 
-type RoleAwareProfile = {
-  roles?: Array<{ code?: string | null }>;
-} | null | undefined;
+type RoleAwareProfile =
+  | {
+      roles?: Array<{ code?: string | null }>;
+    }
+  | null
+  | undefined;
 
 type Plan = {
   id: string;
@@ -64,7 +71,7 @@ export default function BookingScreen() {
   const { isAuthenticated, profile } = useAuth();
 
   const roleCodes = ((profile as RoleAwareProfile)?.roles ?? []).map(
-    (role) => role.code ?? ""
+    (role) => role.code ?? "",
   );
   const isOwner = roleCodes.includes("OWNER");
 
@@ -75,7 +82,7 @@ export default function BookingScreen() {
     }
 
     if (isAuthenticated) {
-      router.push(REQUIRE_AUTH_ROUTES.CUSTOMER_PROFILE);
+      router.push(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
       return;
     }
 
@@ -83,7 +90,13 @@ export default function BookingScreen() {
   };
 
   return (
-    <div style={{ background: "#f4f7f6", minHeight: "100vh", padding: "36px 20px 60px" }}>
+    <div
+      style={{
+        background: "#f4f7f6",
+        minHeight: "100vh",
+        padding: "36px 20px 60px",
+      }}
+    >
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <Card
           style={{ borderRadius: 18, border: "none", marginBottom: 24 }}
@@ -96,8 +109,8 @@ export default function BookingScreen() {
             Chọn gói phù hợp quy mô quán ăn của bạn
           </Title>
           <Paragraph style={{ maxWidth: 780, marginBottom: 0 }}>
-            Tất cả gói đều bao gồm dashboard owner, cập nhật nội dung theo thời gian thực và tạo QR để khách nghe
-            thuyết minh món ăn.
+            Tất cả gói đều bao gồm dashboard owner, cập nhật nội dung theo thời
+            gian thực và tạo QR để khách nghe thuyết minh món ăn.
           </Paragraph>
         </Card>
 
@@ -113,7 +126,11 @@ export default function BookingScreen() {
               >
                 <Space direction="vertical" size={12} style={{ width: "100%" }}>
                   <Space align="center">
-                    {plan.id === "growth" ? <RocketOutlined /> : <CrownOutlined />}
+                    {plan.id === "growth" ? (
+                      <RocketOutlined />
+                    ) : (
+                      <CrownOutlined />
+                    )}
                     <Text strong style={{ fontSize: 20 }}>
                       {plan.name}
                     </Text>
@@ -123,19 +140,29 @@ export default function BookingScreen() {
                   <Title level={3} style={{ margin: 0 }}>
                     {plan.price}
                   </Title>
-                  <Paragraph style={{ marginBottom: 0 }}>{plan.description}</Paragraph>
+                  <Paragraph style={{ marginBottom: 0 }}>
+                    {plan.description}
+                  </Paragraph>
 
                   <div>
                     {plan.features.map((feature) => (
                       <Paragraph key={feature} style={{ marginBottom: 8 }}>
-                        <CheckOutlined style={{ color: "#16a34a", marginRight: 8 }} />
+                        <CheckOutlined
+                          style={{ color: "#16a34a", marginRight: 8 }}
+                        />
                         {feature}
                       </Paragraph>
                     ))}
                   </div>
 
-                  <Button type={plan.badge ? "primary" : "default"} block onClick={handlePrimaryAction}>
-                    {isAuthenticated && isOwner ? "Mở trang quản lý" : "Đăng ký ngay"}
+                  <Button
+                    type={plan.badge ? "primary" : "default"}
+                    block
+                    onClick={handlePrimaryAction}
+                  >
+                    {isAuthenticated && isOwner
+                      ? "Mở trang quản lý"
+                      : "Đăng ký ngay"}
                   </Button>
                 </Space>
               </Card>
