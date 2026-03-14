@@ -9,9 +9,12 @@ import { Link, NavLink } from "react-router-dom";
 import { ENFlag, VNFlag } from "../assets/icons";
 import { PUBLIC_ROUTES, REQUIRE_AUTH_ROUTES } from "../routes/routes";
 
-type RoleAwareProfile = {
-  roles?: Array<{ code?: string | null }>;
-} | null | undefined;
+type RoleAwareProfile =
+  | {
+      roles?: Array<{ code?: string | null }>;
+    }
+  | null
+  | undefined;
 
 export default function AppHeader() {
   const {
@@ -28,7 +31,7 @@ export default function AppHeader() {
   const router = useRouter();
 
   const roleCodes = ((profile as RoleAwareProfile)?.roles ?? []).map(
-    (role) => role.code ?? ""
+    (role) => role.code ?? "",
   );
   const isOwner = roleCodes.includes("OWNER");
 
@@ -38,18 +41,18 @@ export default function AppHeader() {
   const handleLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
-      message.success("Ðang xu?t thành công");
+      message.success("Đăng xuất thành công");
     } catch {
       clearAuth();
-      message.info("Ðã dang xu?t");
+      message.info("Đã đăng xuất");
       router.push(PUBLIC_ROUTES.HOME);
     }
   };
 
   const guestMenu: MenuProps = {
     items: [
-      { key: "login", label: "Ðang nh?p", icon: <UserOutlined /> },
-      { key: "register", label: "Ðang ký", icon: <UserOutlined /> },
+      { key: "login", label: "Đăng nhập", icon: <UserOutlined /> },
+      { key: "register", label: "Đăng ký", icon: <UserOutlined /> },
     ],
     onClick: ({ key }: { key: string }) => {
       if (key === "login") handleLogin();
@@ -73,14 +76,14 @@ export default function AppHeader() {
       { type: "divider" },
       {
         key: "profileDetail",
-        label: "Thông tin tài kho?n",
+        label: "Thông tin tài khoản",
         icon: <UserOutlined />,
       },
       ...(isOwner
         ? [
             {
               key: "ownerDashboard",
-              label: "Trang ch? quán",
+              label: "Trang chủ quán",
               icon: <UserOutlined />,
             },
           ]
@@ -88,14 +91,16 @@ export default function AppHeader() {
       { type: "divider" },
       {
         key: "logout",
-        label: "Ðang xu?t",
+        label: "Đăng xuất",
         icon: <LogoutOutlined />,
         danger: true,
       },
     ],
     onClick: ({ key }: { key: string }) => {
-      if (key === "profileDetail") router.push(REQUIRE_AUTH_ROUTES.CUSTOMER_PROFILE);
-      if (key === "ownerDashboard") router.push(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
+      if (key === "profileDetail")
+        router.push(REQUIRE_AUTH_ROUTES.OWNER_PROFILE);
+      if (key === "ownerDashboard")
+        router.push(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
       if (key === "logout") handleLogout();
     },
   };
@@ -116,16 +121,27 @@ export default function AppHeader() {
   }));
 
   const navItems = [
-    { path: PUBLIC_ROUTES.HOME, label: "Tổng quan" },
-    { path: PUBLIC_ROUTES.ABOUT, label: "Giải pháp" },
-    { path: PUBLIC_ROUTES.BOOKING, label: "Bảng giá" },
-    { path: PUBLIC_ROUTES.SEARCH_BOOKING, label: "Đăng ký demo" },
-    { path: PUBLIC_ROUTES.CONTACT, label: "Liên hệ" },
+    {
+      path: REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD,
+      label: "Trang chủ",
+    },
+    {
+      path: REQUIRE_AUTH_ROUTES.OWNER_STALL,
+      label: "Quản lý quán ăn",
+    },
+    {
+      path: REQUIRE_AUTH_ROUTES.OWNER_STALL_CONTENT,
+      label: "Quản lý nội dung thuyết minh",
+    },
+    {
+      path: REQUIRE_AUTH_ROUTES.OWNER_SUBSCRIPTION_PACKAGE,
+      label: "Gói đăng ký",
+    },
+    {
+      path: REQUIRE_AUTH_ROUTES.OWNER_ANALYTICS_INTERACTION,
+      label: "Thống kê & Tương tác",
+    },
   ];
-
-  if (isAuthenticated && isOwner) {
-    navItems.push({ path: REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD, label: "Trang quản lý" });
-  }
 
   return (
     <div
@@ -287,4 +303,3 @@ export default function AppHeader() {
     </div>
   );
 }
-

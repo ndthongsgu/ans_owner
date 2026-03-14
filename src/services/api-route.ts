@@ -1,22 +1,32 @@
 export const API_ROUTES: ApiRoutes = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/bookvexe-be-j2e",
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
   TIMEOUT: 10000,
   HEADERS: {
     "Content-Type": "application/json",
     Accept: "application/json",
+    "Accept-Language": "vi",
   },
 };
 
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: "/auth/login",
-    LOGOUT: "/auth/logout",
-    REFRESH: "/auth/refresh",
-    PROFILE: "/me",
-    PASSWORD_CHANGE: "/auth/change-password",
-    PASSWORD_RESET_REQUEST: "/auth/password-reset/request",
-    PASSWORD_RESET_CONFIRM: "/auth/password-reset/confirm",
-    REGISTER: "/auth/register",
+    LOGIN: "/owner/auth/login",
+    LOGOUT: "/owner/auth/logout",
+    REFRESH: "/owner/auth/refresh",
+    PROFILE: "/owner/auth/me",
+    PASSWORD_CHANGE: "/owner/auth/change-password",
+    PASSWORD_RESET_REQUEST: "/owner/auth/password-reset/request",
+    PASSWORD_RESET_CONFIRM: "/owner/auth/password-reset/confirm",
+    REGISTER: "/owner/auth/register",
+  },
+  OWNER: {
+    ME: "/owner/auth/me",
+    UPDATE_PROFILE: "/owner/auth/me",
+    SUBSCRIPTION: {
+      LIST: "/owner/subscription-packages/",
+      PURCHASE: (id: string) => `/owner/subscription-packages/${id}/purchase`,
+      MY: "/owner/subscription-packages/my-subscription",
+    },
   },
   USER: {
     GET_ME: "/user/me",
@@ -62,6 +72,7 @@ interface ApiRoutes {
   HEADERS: {
     "Content-Type": string;
     Accept: string;
+    "Accept-Language": string;
     Authorization?: string;
   };
 }

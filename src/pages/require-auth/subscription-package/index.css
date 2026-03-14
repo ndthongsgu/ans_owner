@@ -1,0 +1,152 @@
+.subscription-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.subscription-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.8fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.subscription-title {
+  margin-bottom: 8px !important;
+}
+
+.subscription-subtitle {
+  max-width: 720px;
+  margin-bottom: 0 !important;
+  color: var(--color-text-secondary);
+}
+
+.subscription-current-card {
+  border-radius: 18px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: linear-gradient(145deg, #fff7ed 0%, #fffbeb 100%);
+}
+
+.subscription-current-label {
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--color-accent-700);
+  font-weight: 600;
+}
+
+.subscription-current-name {
+  margin: 0 0 8px !important;
+}
+
+.subscription-current-expire {
+  color: var(--color-text-secondary);
+}
+
+.subscription-benefit-card,
+.subscription-list-card,
+.subscription-package-card {
+  border-radius: 18px;
+}
+
+.subscription-benefit-card {
+  height: 100%;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.subscription-benefit-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+  color: var(--color-primary-700);
+  font-size: 22px;
+}
+
+.subscription-list-head {
+  margin-bottom: 20px;
+}
+
+.subscription-list-title {
+  margin-bottom: 4px !important;
+}
+
+.subscription-list-caption {
+  color: var(--color-text-secondary);
+}
+
+.subscription-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.subscription-package-card {
+  height: 100%;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.subscription-package-card.is-active {
+  border-color: #f59e0b;
+  box-shadow: 0 14px 30px rgba(245, 158, 11, 0.15);
+}
+
+.subscription-package-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.subscription-package-name {
+  margin: 0 0 8px !important;
+}
+
+.subscription-package-desc {
+  color: var(--color-text-secondary);
+}
+
+.subscription-package-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.subscription-package-amount {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.subscription-package-duration {
+  color: var(--color-text-secondary);
+}
+
+.subscription-feature-list {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.subscription-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-secondary);
+}
+
+.subscription-feature-item .anticon {
+  color: var(--color-success);
+}
+
+@media (max-width: 992px) {
+  .subscription-hero {
+    grid-template-columns: 1fr;
+  }
+}

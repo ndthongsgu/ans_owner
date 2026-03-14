@@ -16,7 +16,7 @@ let refreshPromise: Promise<string> | null = null;
 
 const handleTimeout = (timeout: number) =>
   new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Request timed out")), timeout)
+    setTimeout(() => reject(new Error("Request timed out")), timeout),
   );
 
 const refreshAccessToken = async (): Promise<string> => {
@@ -39,7 +39,7 @@ const refreshAccessToken = async (): Promise<string> => {
       headers: {
         Authorization: `Bearer ${refreshToken}`,
       },
-    }
+    },
   )
     .then((response) => {
       authStore.setTokens(response.accessToken, response.refreshToken);
@@ -55,7 +55,7 @@ const refreshAccessToken = async (): Promise<string> => {
 const request = async <T>(
   url: string,
   method: HttpMethod,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> => {
   const {
     headers = {},
@@ -110,7 +110,7 @@ const request = async <T>(
           useAuthStore.getState().clearTokens();
           if (!window.location.pathname.includes("/login")) {
             window.location.href = `/login?message=${encodeURIComponent(
-              "Session expired. Please login again."
+              "Session expired. Please login again.",
             )}`;
           }
           throw new Error("Session expired");
@@ -143,41 +143,41 @@ export const rootApiServiceOld = {
     url: string,
     params?: Record<string, any>,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => request<T>(url, "GET", { params, headers, ...options }),
 
   post: <T>(
     url: string,
     body?: any,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => request<T>(url, "POST", { body, headers, ...options }),
 
   put: <T>(
     url: string,
     body?: any,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => request<T>(url, "PUT", { body, headers, ...options }),
 
   delete: <T>(
     url: string,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => request<T>(url, "DELETE", { headers, ...options }),
 
   patch: <T>(
     url: string,
     body?: any,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => request<T>(url, "PATCH", { body, headers, ...options }),
 };
 
 export const requestAxios = async <T>(
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
   url: string,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> => {
   const {
     headers = {},
@@ -208,6 +208,10 @@ export const requestAxios = async <T>(
     if (error.response?.data) {
       const errorData = error.response.data;
 
+      if (errorData.detail) {
+        throw new Error(errorData.detail);
+      }
+
       // Use the server-provided message if available
       if (errorData.message) {
         throw new Error(errorData.message);
@@ -229,34 +233,34 @@ const rootApiService = {
     url: string,
     params?: Record<string, any>,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => requestAxios<T>("GET", url, { params, headers, ...options }),
 
   post: <T>(
     url: string,
     body?: any,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => requestAxios<T>("POST", url, { body, headers, ...options }),
 
   put: <T>(
     url: string,
     body?: any,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => requestAxios<T>("PUT", url, { body, headers, ...options }),
 
   delete: <T>(
     url: string,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => requestAxios<T>("DELETE", url, { headers, ...options }),
 
   patch: <T>(
     url: string,
     body?: any,
     headers?: Record<string, string>,
-    options?: RequestOptions
+    options?: RequestOptions,
   ) => requestAxios<T>("PATCH", url, { body, headers, ...options }),
 };
 

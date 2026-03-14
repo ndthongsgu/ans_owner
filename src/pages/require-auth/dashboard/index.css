@@ -1,0 +1,159 @@
+.owner-dashboard-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.owner-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid var(--color-primary-100);
+  background:
+    radial-gradient(
+      circle at 10% 10%,
+      rgba(14, 165, 233, 0.22),
+      transparent 50%
+    ),
+    linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%);
+}
+
+.owner-hero-title {
+  margin: 0 !important;
+}
+
+.owner-hero-subtitle {
+  color: var(--color-text-secondary);
+}
+
+.owner-hero-button {
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.owner-kpis-row {
+  margin-top: 2px;
+}
+
+.owner-kpi-card {
+  height: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.owner-kpi-listens {
+  border-top: 4px solid #0ea5e9;
+}
+
+.owner-kpi-rating {
+  border-top: 4px solid #f59e0b;
+}
+
+.owner-kpi-favorites {
+  border-top: 4px solid #ef4444;
+}
+
+.owner-kpi-growth {
+  border-top: 4px solid #22c55e;
+}
+
+.owner-kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.owner-kpi-icon {
+  font-size: 18px;
+}
+
+.owner-kpi-label {
+  color: var(--color-text-secondary);
+}
+
+.owner-kpi-value {
+  margin: 8px 0 0 !important;
+}
+
+.owner-kpi-trend {
+  color: var(--color-text-secondary);
+}
+
+.owner-chart-card {
+  border-radius: 14px;
+}
+
+.owner-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.owner-chart-wrap {
+  width: 100%;
+}
+
+.owner-chart-svg {
+  width: 100%;
+  height: auto;
+}
+
+.owner-axis {
+  stroke: #d1d5db;
+  stroke-width: 1;
+}
+
+.owner-chart-line {
+  fill: none;
+  stroke: #0284c7;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.owner-chart-point {
+  fill: #0ea5e9;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.owner-chart-labels {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.owner-info-card {
+  border-radius: 14px;
+}
+
+.owner-side-stack {
+  width: 100%;
+}
+
+.owner-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+@media (max-width: 992px) {
+  .owner-hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .owner-chart-labels {
+    font-size: 10px;
+  }
+}

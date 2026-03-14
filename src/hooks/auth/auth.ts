@@ -11,6 +11,7 @@ import { API_ENDPOINTS } from "@/services/api-route";
 import rootApiService from "@/services/api.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 import { useAuthStore } from "./useAuthStore";
 
 export const useLogin = () => {
@@ -24,7 +25,7 @@ export const useLogin = () => {
         API_ENDPOINTS.AUTH.LOGIN,
         credentials,
         {}, // headers
-        { skipAuth: true } // This will prevent token refresh attempts
+        { skipAuth: true }, // This will prevent token refresh attempts
       );
       return response;
     },
@@ -35,7 +36,7 @@ export const useLogin = () => {
       // Try to fetch user profile immediately
       try {
         const profile = await rootApiService.get<UserProfile>(
-          API_ENDPOINTS.AUTH.PROFILE
+          API_ENDPOINTS.AUTH.PROFILE,
         );
         setUser(profile);
       } catch (error) {
@@ -43,7 +44,7 @@ export const useLogin = () => {
       }
 
       queryClient.clear();
-      navigate("/");
+      navigate(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
     },
     onError: (error: any) => {
       // The error message will now be the actual server message
@@ -100,8 +101,8 @@ export const useChangePassword = () => {
       navigate(
         "/login?message=" +
           encodeURIComponent(
-            "Password changed successfully. Please login again."
-          )
+            "Password changed successfully. Please login again.",
+          ),
       );
     },
     onError: (error: any) => {
@@ -115,7 +116,7 @@ export const usePasswordResetRequest = () => {
     mutationFn: async (data: PasswordResetRequest) => {
       await rootApiService.post(
         API_ENDPOINTS.AUTH.PASSWORD_RESET_REQUEST,
-        data
+        data,
       );
     },
   });
@@ -126,43 +127,22 @@ export const usePasswordResetConfirm = () => {
     mutationFn: async (data: PasswordResetConfirmRequest) => {
       await rootApiService.post(
         API_ENDPOINTS.AUTH.PASSWORD_RESET_CONFIRM,
-        data
+        data,
       );
     },
   });
 };
 
 export const useRegister = () => {
-  const { setTokens, setUser } = useAuthStore();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (credentials: RegisterRequest) => {
       const response = await rootApiService.post<AuthResponse>(
-        "/auth/register",
+        API_ENDPOINTS.AUTH.REGISTER,
         credentials,
         {}, // headers
-        { skipAuth: true }
+        { skipAuth: true },
       );
       return response;
-    },
-    onSuccess: async (data) => {
-      // Set tokens first
-      setTokens(data.accessToken, data.refreshToken);
-
-      // Try to fetch user profile immediately
-      try {
-        const profile = await rootApiService.get<UserProfile>(
-          API_ENDPOINTS.AUTH.PROFILE
-        );
-        setUser(profile);
-      } catch (error) {
-        console.warn("Could not fetch user profile after registration:", error);
-      }
-
-      queryClient.clear();
-      navigate("/");
     },
     onError: (error: any) => {
       throw new Error(error.message || "Registration failed");

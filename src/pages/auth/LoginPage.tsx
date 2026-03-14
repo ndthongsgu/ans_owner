@@ -4,6 +4,7 @@ import { Spin, Alert } from "antd";
 import { useProfile } from "@/hooks/auth/auth";
 import { useAuthHydrationStore, useAuthStore } from "@/hooks/auth/useAuthStore";
 import { useNavigate } from "react-router-dom";
+import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 
 export default function LoginPage() {
   const { isAuthenticated } = useAuthStore();
@@ -22,7 +23,7 @@ export default function LoginPage() {
 
       // 2. Set the 2-second delay before navigating
       timeoutId = window.setTimeout(() => {
-        navigate("/");
+        navigate(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
       }, 2000); // 2000 milliseconds = 2 seconds
     }
 
@@ -71,7 +72,7 @@ export default function LoginPage() {
         {/* The Alert component for the "Already Logged In" message */}
         <Alert
           message="Đã đăng nhập"
-          description="Bạn đã đăng nhập. Đang chuyển hướng về trang chủ sau 2 giây..."
+          description="Bạn đã đăng nhập. Đang chuyển hướng về trang quản lý quán sau 2 giây..."
           type="success"
           showIcon
           style={{ marginBottom: "20px", width: 400 }}
@@ -134,7 +135,7 @@ export default function LoginPage() {
         }}
       >
         {/* Pass adminMode=false for customer page */}
-        <LoginForm adminMode={false} />
+        <LoginForm />
       </div>
     </div>
   );

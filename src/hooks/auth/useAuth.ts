@@ -50,6 +50,8 @@ export const useAuth = () => {
 
   // Calculate authentication status
   const actuallyAuthenticated = isAuthenticated && hasValidToken;
+  const ownerDisplayName =
+    (profile as any)?.owner?.full_name || (user as any)?.owner?.full_name;
 
   return {
     // Authentication state
@@ -66,13 +68,10 @@ export const useAuth = () => {
 
     // User display helpers
     displayName:
-      profile?.customer?.name ||
-      profile?.username ||
-      user?.username ||
-      "Người dùng",
+      ownerDisplayName || profile?.username || user?.username || "Người dùng",
     displayEmail: profile?.email || user?.email,
     displayInitial: (
-      profile?.customer?.name ||
+      ownerDisplayName ||
       profile?.username ||
       user?.username ||
       "U"

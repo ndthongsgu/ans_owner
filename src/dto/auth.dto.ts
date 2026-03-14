@@ -26,7 +26,7 @@ export interface PasswordResetConfirmRequest {
 }
 
 export interface RegisterRequest {
-  name: string;
+  full_name: string;
   email: string;
   phone: string;
   password: string;
