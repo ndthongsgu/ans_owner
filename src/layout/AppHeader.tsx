@@ -283,6 +283,7 @@ export default function AppHeader() {
           <NavLink
             key={item.path}
             to={item.path}
+            end
             style={({ isActive }) => ({
               fontWeight: isActive ? 600 : 500,
               color: isActive

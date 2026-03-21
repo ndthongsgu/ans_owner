@@ -1,0 +1,19 @@
+.stall-add-map {
+  width: 100%;
+  height: 260px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.stall-file-input-hidden {
+  display: none;
+}
+
+.stall-cover-preview {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+}

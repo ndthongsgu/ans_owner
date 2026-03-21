@@ -2,7 +2,7 @@ export const REQUIRE_AUTH_ROUTES = {
   OWNER_DASHBOARD: "/dashboard",
   OWNER_PROFILE: "/owner/profile",
   OWNER_STALL: "/owner/stall",
-  OWNER_STALL_CONTENT: "/owner/stall/content",
+  OWNER_STALL_CONTENT: "/owner/stall-content",
   OWNER_SUBSCRIPTION_PACKAGE: "/owner/subscription-package",
   OWNER_ANALYTICS_INTERACTION: "/owner/analytics-interaction",
   CHANGE_PASSWORD: "/change-password",
