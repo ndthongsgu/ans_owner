@@ -25,17 +25,17 @@ import {
 } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { UploadFile, UploadProps } from "antd";
-import AddStoreModal from "./components/AddStoreModal";
-import StoreFilters from "./components/StoreFilters";
-import StoreList from "./components/StoreList";
+import AddStallModal from "@/components/stall/AddStallModal";
+import StallFilters from "@/components/stall/StallFilters";
+import StallList from "@/components/stall/StallList";
 import {
   categoryOptions,
   DEFAULT_MAIN_COVER_IMAGE,
   DEFAULT_NEW_COVER_IMAGE,
   priceOptions,
-} from "./constants";
-import type { StoreItem } from "./types";
-import { makeId, toBase64 } from "./utils";
+} from "@/constants/stall.constants";
+import type { StallItem } from "@/dto/stall.dto";
+import { makeId, toBase64 } from "@/utils/stall.utils";
 import "./index.css";
 
 const { Title, Text } = Typography;
@@ -43,23 +43,23 @@ const { Title, Text } = Typography;
 export default function StallPage() {
   const { data: profile } = useOwnerProfile();
   const owner = profile?.owner;
-  const [form] = Form.useForm<StoreItem>();
-  const [addStoreForm] = Form.useForm<StoreItem>();
+  const [form] = Form.useForm<StallItem>();
+  const [addStallForm] = Form.useForm<StallItem>();
   const detailRef = useRef<HTMLDivElement>(null);
-  const [isAddStoreModalOpen, setIsAddStoreModalOpen] = useState(false);
+  const [isAddStallModalOpen, setIsAddStallModalOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriceRange, setFilterPriceRange] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 
-  const defaultStore = useMemo<StoreItem[]>(() => {
+  const defaultStall = useMemo<StallItem[]>(() => {
     const name = owner?.business_name || "Quán của tôi";
     const location = owner?.business_address || "Chưa cập nhật địa chỉ";
 
     return [
       {
-        id: "store-main",
+        id: "stall-main",
         name,
         location,
         coverImage: DEFAULT_MAIN_COVER_IMAGE,
@@ -71,52 +71,52 @@ export default function StallPage() {
     ];
   }, [owner?.business_address, owner?.business_name]);
 
-  const [stores, setStores] = useState<StoreItem[]>(() => defaultStore);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>(
-    () => defaultStore[0]?.id ?? "",
+  const [stalls, setStalls] = useState<StallItem[]>(() => defaultStall);
+  const [selectedStallId, setSelectedStallId] = useState<string>(
+    () => defaultStall[0]?.id ?? "",
   );
 
-  const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
+  const filteredStalls = useMemo(() => {
+    return stalls.filter((stall) => {
       const kw = keyword.trim().toLowerCase();
       const matchedKeyword =
         !kw ||
-        store.name.toLowerCase().includes(kw) ||
-        store.location.toLowerCase().includes(kw);
+        stall.name.toLowerCase().includes(kw) ||
+        stall.location.toLowerCase().includes(kw);
       const matchedCategory =
-        filterCategory === "all" || store.category === filterCategory;
+        filterCategory === "all" || stall.category === filterCategory;
       const matchedPrice =
-        filterPriceRange === "all" || store.priceRange === filterPriceRange;
+        filterPriceRange === "all" || stall.priceRange === filterPriceRange;
 
       return matchedKeyword && matchedCategory && matchedPrice;
     });
-  }, [filterCategory, filterPriceRange, keyword, stores]);
+  }, [filterCategory, filterPriceRange, keyword, stalls]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredStores.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredStalls.length / pageSize));
   const effectiveCurrentPage = Math.min(currentPage, totalPages);
-  const effectiveSelectedStoreId = filteredStores.some(
-    (store) => store.id === selectedStoreId,
+  const effectiveSelectedStallId = filteredStalls.some(
+    (stall) => stall.id === selectedStallId,
   )
-    ? selectedStoreId
-    : (filteredStores[0]?.id ?? "");
+    ? selectedStallId
+    : (filteredStalls[0]?.id ?? "");
 
-  const paginatedStores = useMemo(() => {
+  const paginatedStalls = useMemo(() => {
     const start = (effectiveCurrentPage - 1) * pageSize;
-    return filteredStores.slice(start, start + pageSize);
-  }, [effectiveCurrentPage, filteredStores, pageSize]);
+    return filteredStalls.slice(start, start + pageSize);
+  }, [effectiveCurrentPage, filteredStalls, pageSize]);
 
-  const selectedStore = stores.find(
-    (store) => store.id === effectiveSelectedStoreId,
+  const selectedStall = stalls.find(
+    (stall) => stall.id === effectiveSelectedStallId,
   );
-  const selectedVisibleStore = filteredStores.some(
-    (store) => store.id === effectiveSelectedStoreId,
+  const selectedVisibleStall = filteredStalls.some(
+    (stall) => stall.id === effectiveSelectedStallId,
   );
   const watchedLocation = Form.useWatch("location", form);
   const watchedCoverImage = Form.useWatch("coverImage", form);
   const uploadFileList: UploadFile[] = watchedCoverImage
     ? [
         {
-          uid: effectiveSelectedStoreId || "store-cover",
+          uid: effectiveSelectedStallId || "stall-cover",
           name: "cover-image",
           status: "done",
           url: watchedCoverImage,
@@ -124,27 +124,27 @@ export default function StallPage() {
       ]
     : [];
   const mapQuery = encodeURIComponent(
-    (watchedLocation as string) || selectedStore?.location || "Việt Nam",
+    (watchedLocation as string) || selectedStall?.location || "Việt Nam",
   );
   const mapEmbedUrl = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
   const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   useEffect(() => {
-    if (selectedStore) {
-      form.setFieldsValue(selectedStore);
+    if (selectedStall) {
+      form.setFieldsValue(selectedStall);
     }
-  }, [form, selectedStore]);
+  }, [form, selectedStall]);
 
-  const handleSelectStore = (storeId: string) => {
-    setSelectedStoreId(storeId);
+  const handleSelectStall = (stallId: string) => {
+    setSelectedStallId(stallId);
     window.setTimeout(() => {
       detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
   };
 
-  const handleOpenAddStoreModal = () => {
-    addStoreForm.setFieldsValue({
-      name: `Quán mới ${stores.length + 1}`,
+  const handleOpenAddStallModal = () => {
+    addStallForm.setFieldsValue({
+      name: `Quán mới ${stalls.length + 1}`,
       location: "Chưa cập nhật địa chỉ",
       coverImage: DEFAULT_NEW_COVER_IMAGE,
       openTime: "09:00",
@@ -152,42 +152,42 @@ export default function StallPage() {
       category: "Món Việt",
       priceRange: "Tầm trung",
     });
-    setIsAddStoreModalOpen(true);
+    setIsAddStallModalOpen(true);
   };
 
-  const handleCreateStore = async () => {
+  const handleCreateStall = async () => {
     try {
-      const values = await addStoreForm.validateFields();
-      const nextStore: StoreItem = {
+      const values = await addStallForm.validateFields();
+      const nextStall: StallItem = {
         ...values,
         id: makeId(),
         coverImage: values.coverImage || DEFAULT_NEW_COVER_IMAGE,
       };
 
-      setStores((prev) => [nextStore, ...prev]);
-      setSelectedStoreId(nextStore.id);
+      setStalls((prev) => [nextStall, ...prev]);
+      setSelectedStallId(nextStall.id);
       setCurrentPage(1);
-      setIsAddStoreModalOpen(false);
-      addStoreForm.resetFields();
+      setIsAddStallModalOpen(false);
+      addStallForm.resetFields();
       message.success("Đã thêm quán mới");
     } catch {
       message.warning("Vui lòng điền đầy đủ thông tin quán mới");
     }
   };
 
-  const handleSaveStore = (values: StoreItem) => {
-    if (!effectiveSelectedStoreId) {
+  const handleSaveStall = (values: StallItem) => {
+    if (!effectiveSelectedStallId) {
       message.warning("Vui lòng chọn quán cần chỉnh sửa");
       return;
     }
 
-    setStores((prev) =>
+    setStalls((prev) =>
       prev.map((item) =>
-        item.id === effectiveSelectedStoreId
+        item.id === effectiveSelectedStallId
           ? {
               ...item,
               ...values,
-              id: effectiveSelectedStoreId,
+              id: effectiveSelectedStallId,
             }
           : item,
       ),
@@ -207,10 +207,10 @@ export default function StallPage() {
     }
   };
 
-  const totalStores = stores.length;
-  const selectedStoreCategory = selectedStore?.category || "Chưa chọn";
-  const selectedOperatingHours = selectedStore
-    ? `${selectedStore.openTime} - ${selectedStore.closeTime}`
+  const totalStalls = stalls.length;
+  const selectedStallCategory = selectedStall?.category || "Chưa chọn";
+  const selectedOperatingHours = selectedStall
+    ? `${selectedStall.openTime} - ${selectedStall.closeTime}`
     : "Chưa có dữ liệu";
 
   return (
@@ -219,7 +219,7 @@ export default function StallPage() {
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} lg={14}>
             <div className="owner-store-hero-copy">
-              <Text className="owner-store-eyebrow">Store Management</Text>
+              <Text className="owner-store-eyebrow">Stall Management</Text>
               <Title level={2} className="owner-store-hero-title">
                 Quản lý quán ăn theo trải nghiệm trực quan hơn
               </Title>
@@ -236,19 +236,19 @@ export default function StallPage() {
                 <Text className="owner-store-highlight-label">
                   Tổng số quán
                 </Text>
-                <Title level={3}>{totalStores}</Title>
+                <Title level={3}>{totalStalls}</Title>
               </div>
               <div className="owner-store-highlight-card">
                 <Text className="owner-store-highlight-label">
                   Đang hiển thị
                 </Text>
-                <Title level={3}>{filteredStores.length}</Title>
+                <Title level={3}>{filteredStalls.length}</Title>
               </div>
               <div className="owner-store-highlight-card">
                 <Text className="owner-store-highlight-label">
                   Danh mục hiện tại
                 </Text>
-                <Title level={4}>{selectedStoreCategory}</Title>
+                <Title level={4}>{selectedStallCategory}</Title>
               </div>
               <div className="owner-store-highlight-card">
                 <Text className="owner-store-highlight-label">
@@ -263,7 +263,7 @@ export default function StallPage() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24}>
-          <StoreFilters
+          <StallFilters
             keyword={keyword}
             filterCategory={filterCategory}
             filterPriceRange={filterPriceRange}
@@ -289,14 +289,14 @@ export default function StallPage() {
         </Col>
 
         <Col xs={24} xl={10}>
-          <StoreList
-            filteredStores={filteredStores}
-            paginatedStores={paginatedStores}
-            effectiveSelectedStoreId={effectiveSelectedStoreId}
+          <StallList
+            filteredStalls={filteredStalls}
+            paginatedStalls={paginatedStalls}
+            effectiveSelectedStallId={effectiveSelectedStallId}
             effectiveCurrentPage={effectiveCurrentPage}
             pageSize={pageSize}
-            onSelectStore={handleSelectStore}
-            onOpenAddModal={handleOpenAddStoreModal}
+            onSelectStall={handleSelectStall}
+            onOpenAddModal={handleOpenAddStallModal}
             onPaginationChange={(page, size) => {
               setCurrentPage(page);
               setPageSize(size);
@@ -310,33 +310,33 @@ export default function StallPage() {
               <div className="owner-store-detail-head">
                 <div>
                   <Text className="owner-store-detail-caption">
-                    Store Detail Form
+                    Stall Detail Form
                   </Text>
                   <Title level={4} className="owner-store-detail-title">
                     Thông tin chi tiết quán
                   </Title>
                 </div>
-                {selectedStore ? (
-                  <Tag color="orange">Đang chỉnh sửa: {selectedStore.name}</Tag>
+                {selectedStall ? (
+                  <Tag color="orange">Đang chỉnh sửa: {selectedStall.name}</Tag>
                 ) : null}
               </div>
 
-              {selectedStore && selectedVisibleStore ? (
-                <Form form={form} layout="vertical" onFinish={handleSaveStore}>
+              {selectedStall && selectedVisibleStall ? (
+                <Form form={form} layout="vertical" onFinish={handleSaveStall}>
                   <div className="owner-store-form-hero">
                     <img
-                      src={watchedCoverImage || selectedStore.coverImage}
-                      alt={selectedStore.name}
+                      src={watchedCoverImage || selectedStall.coverImage}
+                      alt={selectedStall.name}
                       className="owner-store-form-hero-image"
                     />
                     <div className="owner-store-form-hero-content">
-                      <Title level={4}>{selectedStore.name}</Title>
-                      <Text type="secondary">{selectedStore.location}</Text>
+                      <Title level={4}>{selectedStall.name}</Title>
+                      <Text type="secondary">{selectedStall.location}</Text>
                       <div className="owner-store-form-hero-tags">
-                        <Tag color="gold">{selectedStore.priceRange}</Tag>
-                        <Tag color="blue">{selectedStore.category}</Tag>
+                        <Tag color="gold">{selectedStall.priceRange}</Tag>
+                        <Tag color="blue">{selectedStall.category}</Tag>
                         <Tag>
-                          {selectedStore.openTime} - {selectedStore.closeTime}
+                          {selectedStall.openTime} - {selectedStall.closeTime}
                         </Tag>
                       </div>
                     </div>
@@ -443,8 +443,8 @@ export default function StallPage() {
 
                   <div className="owner-store-cover-preview">
                     <img
-                      src={watchedCoverImage || selectedStore.coverImage}
-                      alt={selectedStore.name}
+                      src={watchedCoverImage || selectedStall.coverImage}
+                      alt={selectedStall.name}
                     />
                   </div>
 
@@ -528,14 +528,14 @@ export default function StallPage() {
         </Col>
       </Row>
 
-      <AddStoreModal
-        open={isAddStoreModalOpen}
-        form={addStoreForm}
+      <AddStallModal
+        open={isAddStallModalOpen}
+        form={addStallForm}
         onCancel={() => {
-          setIsAddStoreModalOpen(false);
-          addStoreForm.resetFields();
+          setIsAddStallModalOpen(false);
+          addStallForm.resetFields();
         }}
-        onCreate={handleCreateStore}
+        onCreate={handleCreateStall}
       />
     </div>
   );

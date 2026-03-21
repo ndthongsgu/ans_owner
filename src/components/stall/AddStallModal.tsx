@@ -1,22 +1,22 @@
 import { EnvironmentOutlined, PictureOutlined } from "@ant-design/icons";
 import { Col, Form, Input, Modal, Row, Select } from "antd";
 import type { FormInstance } from "antd";
-import { categoryOptions, priceOptions } from "../constants";
-import type { StoreItem } from "../types";
+import { categoryOptions, priceOptions } from "@/constants/stall.constants";
+import type { StallItem } from "@/dto/stall.dto";
 
-type AddStoreModalProps = {
+type AddStallModalProps = {
   open: boolean;
-  form: FormInstance<StoreItem>;
+  form: FormInstance<StallItem>;
   onCancel: () => void;
   onCreate: () => void;
 };
 
-export default function AddStoreModal({
+export default function AddStallModal({
   open,
   form,
   onCancel,
   onCreate,
-}: AddStoreModalProps) {
+}: AddStallModalProps) {
   return (
     <Modal
       title="Thêm quán mới"
@@ -83,7 +83,9 @@ export default function AddStoreModal({
             <Form.Item
               name="closeTime"
               label="Giờ đóng cửa"
-              rules={[{ required: true, message: "Vui lòng nhập giờ đóng cửa" }]}
+              rules={[
+                { required: true, message: "Vui lòng nhập giờ đóng cửa" },
+              ]}
             >
               <Input size="large" placeholder="22:00" />
             </Form.Item>

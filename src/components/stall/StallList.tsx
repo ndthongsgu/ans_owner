@@ -1,30 +1,30 @@
 import { AppstoreAddOutlined } from "@ant-design/icons";
 import { Button, Card, Empty, Pagination, Tag, Typography } from "antd";
-import type { StoreItem } from "../types";
+import type { StallItem } from "@/dto/stall.dto";
 
 const { Text: TypographyText } = Typography;
 
-type StoreListProps = {
-  filteredStores: StoreItem[];
-  paginatedStores: StoreItem[];
-  effectiveSelectedStoreId: string;
+type StallListProps = {
+  filteredStalls: StallItem[];
+  paginatedStalls: StallItem[];
+  effectiveSelectedStallId: string;
   effectiveCurrentPage: number;
   pageSize: number;
-  onSelectStore: (storeId: string) => void;
+  onSelectStall: (stallId: string) => void;
   onOpenAddModal: () => void;
   onPaginationChange: (page: number, size: number) => void;
 };
 
-export default function StoreList({
-  filteredStores,
-  paginatedStores,
-  effectiveSelectedStoreId,
+export default function StallList({
+  filteredStalls,
+  paginatedStalls,
+  effectiveSelectedStallId,
   effectiveCurrentPage,
   pageSize,
-  onSelectStore,
+  onSelectStall,
   onOpenAddModal,
   onPaginationChange,
-}: StoreListProps) {
+}: StallListProps) {
   return (
     <Card
       title="Danh sách quán của tôi"
@@ -40,24 +40,24 @@ export default function StoreList({
       className="owner-store-list-card"
     >
       <TypographyText type="secondary" className="store-result-count">
-        Tìm thấy {filteredStores.length} quán phù hợp. Nhấn vào từng quán để mở
+        Tìm thấy {filteredStalls.length} quán phù hợp. Nhấn vào từng quán để mở
         form chi tiết.
       </TypographyText>
 
-      {filteredStores.length === 0 ? (
+      {filteredStalls.length === 0 ? (
         <Empty description="Không tìm thấy quán phù hợp bộ lọc" />
       ) : (
         <>
           <div className="store-card-grid">
-            {paginatedStores.map((item) => {
-              const isActive = effectiveSelectedStoreId === item.id;
+            {paginatedStalls.map((item) => {
+              const isActive = effectiveSelectedStallId === item.id;
 
               return (
                 <button
                   key={item.id}
                   type="button"
                   className={`store-card ${isActive ? "store-card-active" : ""}`}
-                  onClick={() => onSelectStore(item.id)}
+                  onClick={() => onSelectStall(item.id)}
                 >
                   <div className="store-card-cover-wrap">
                     <img
@@ -72,7 +72,10 @@ export default function StoreList({
                     <TypographyText strong className="store-card-name">
                       {item.name}
                     </TypographyText>
-                    <TypographyText type="secondary" className="store-card-location">
+                    <TypographyText
+                      type="secondary"
+                      className="store-card-location"
+                    >
                       {item.location}
                     </TypographyText>
                     <div className="store-card-meta">
@@ -83,7 +86,7 @@ export default function StoreList({
                     </div>
                     <div className="store-card-meta store-card-meta-secondary">
                       <Tag bordered={false} color="geekblue">
-                        #{item.id.replace("store-", "")}
+                        #{item.id.replace("stall-", "")}
                       </Tag>
                     </div>
                     <span className="store-card-action">
@@ -99,11 +102,13 @@ export default function StoreList({
             <Pagination
               current={effectiveCurrentPage}
               pageSize={pageSize}
-              total={filteredStores.length}
+              total={filteredStalls.length}
               showSizeChanger
               pageSizeOptions={["3", "6", "9", "12"]}
               onChange={onPaginationChange}
-              showTotal={(total, range) => `${range[0]}-${range[1]} / ${total} quán`}
+              showTotal={(total, range) =>
+                `${range[0]}-${range[1]} / ${total} quán`
+              }
             />
           </div>
         </>

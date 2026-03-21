@@ -1,8 +1,8 @@
 import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Card, Col, Input, Row, Select } from "antd";
-import { categoryOptions, priceOptions } from "../constants";
+import { categoryOptions, priceOptions } from "@/constants/stall.constants";
 
-type StoreFiltersProps = {
+type StallFiltersProps = {
   keyword: string;
   filterCategory: string;
   filterPriceRange: string;
@@ -12,7 +12,7 @@ type StoreFiltersProps = {
   onReset: () => void;
 };
 
-export default function StoreFilters({
+export default function StallFilters({
   keyword,
   filterCategory,
   filterPriceRange,
@@ -20,7 +20,7 @@ export default function StoreFilters({
   onCategoryChange,
   onPriceRangeChange,
   onReset,
-}: StoreFiltersProps) {
+}: StallFiltersProps) {
   return (
     <Card className="owner-store-filter-card">
       <Row gutter={[12, 12]} align="middle">
@@ -50,7 +50,10 @@ export default function StoreFilters({
           <Select
             size="large"
             value={filterPriceRange}
-            options={[{ label: "Tất cả mức giá", value: "all" }, ...priceOptions]}
+            options={[
+              { label: "Tất cả mức giá", value: "all" },
+              ...priceOptions,
+            ]}
             onChange={onPriceRangeChange}
             suffixIcon={<FilterOutlined />}
             style={{ width: "100%" }}

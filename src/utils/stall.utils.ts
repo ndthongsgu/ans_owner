@@ -1,5 +1,5 @@
 export function makeId() {
-  return `store-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  return `stall-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 }
 
 export function toBase64(file: File): Promise<string> {
