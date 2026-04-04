@@ -1,0 +1,20 @@
+.payment-gateway-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.payment-gateway-card {
+  width: 100%;
+  max-width: 520px;
+}
+
+.payment-gateway-content {
+  width: 100%;
+}
+
+.payment-gateway-title {
+  margin: 0 !important;
+}

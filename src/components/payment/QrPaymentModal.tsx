@@ -1,11 +1,16 @@
 import { Modal, Button, Space, Tag, Typography, Divider } from "antd";
 import { CheckCircleFilled, CloseCircleOutlined } from "@ant-design/icons";
-import { Momo, ZaloPay, VNPay, ATM, cash as CashIcon } from "@/assets/icons";
-import { useMemo } from "react";
+import { ZaloPay, VNPay, ATM, cash as CashIcon } from "@/assets/icons";
+import "./QrPaymentModal.css";
 
 const { Title, Text } = Typography;
 
-export type PaymentMethodId = "momo" | "zalopay" | "vnpay" | "banking" | "cash" | (string & {});
+export type PaymentMethodId =
+  | "zalopay"
+  | "vnpay"
+  | "banking"
+  | "cash"
+  | (string & {});
 
 type PaymentStatus = "success" | "pending" | "failed" | "refunded";
 
@@ -15,13 +20,19 @@ interface QrPaymentModalProps {
   amount: number;
   onClose: () => void;
   onConfirmPaid: () => void | Promise<void>;
+  paymentUrl?: string;
+  qrCodeUrl?: string;
+  orderId?: string;
   loading?: boolean;
   status?: PaymentStatus;
   methodLabel?: string;
+  confirmText?: string;
 }
 
-const METHOD_META: Record<PaymentMethodId, { label: string; color: string; icon: string }> = {
-  momo: { label: "Ví MoMo", color: "#a50064", icon: Momo },
+const METHOD_META: Record<
+  PaymentMethodId,
+  { label: string; color: string; icon: string }
+> = {
   zalopay: { label: "ZaloPay", color: "#0068ff", icon: ZaloPay },
   vnpay: { label: "VNPay", color: "#0066cc", icon: VNPay },
   banking: { label: "Chuyển khoản ngân hàng", color: "#52c41a", icon: ATM },
@@ -41,27 +52,30 @@ export default function QrPaymentModal({
   amount,
   onClose,
   onConfirmPaid,
+  paymentUrl,
+  qrCodeUrl,
+  orderId,
   loading,
   status = "pending",
   methodLabel,
+  confirmText,
 }: QrPaymentModalProps) {
-  const baseMeta =
-    METHOD_META[method as PaymentMethodId] || {
-      label: (method || "").toUpperCase(),
-      color: "#52c41a",
-      icon: ATM,
-    };
+  const baseMeta = METHOD_META[method as PaymentMethodId] || {
+    label: (method || "").toUpperCase(),
+    color: "#52c41a",
+    icon: ATM,
+  };
   const meta = {
     ...baseMeta,
     label: methodLabel || baseMeta.label,
   };
   const isVNPay = (method || "").toLowerCase() === "vnpay";
 
-  const qrImageUrl = useMemo(() => {
-    const url = `https://www.youtube.com/watch?v=dQw4w9WgXcQ&method=${method}&amount=${amount}`;
-    const encoded = encodeURIComponent(url);
-    return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encoded}`;
-  }, [method, amount]);
+  const qrImageUrl = qrCodeUrl || "";
+  const canOpenPaymentPage =
+    typeof paymentUrl === "string" && paymentUrl.length > 0;
+  const canShowQr =
+    !isVNPay && typeof qrImageUrl === "string" && qrImageUrl.length > 0;
 
   if (!meta) return null;
   return (
@@ -71,34 +85,64 @@ export default function QrPaymentModal({
       footer={null}
       width={560}
       centered
-      destroyOnClose
+      destroyOnHidden
       title={
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <img src={meta.icon} alt={meta.label} style={{ width: 32, height: 32, borderRadius: 8 }} />
-          <span>{isVNPay ? "Thanh toán" : "Quét QR thanh toán"} - {meta.label}</span>
+        <div className="payment-modal-title">
+          <img
+            src={meta.icon}
+            alt={meta.label}
+            className="payment-modal-icon"
+          />
+          <span>
+            {isVNPay ? "Thanh toán" : "Quét QR thanh toán"} - {meta.label}
+          </span>
         </div>
       }
     >
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <Tag color={STATUS_META[status].color} style={{ marginBottom: 8 }}>
+      <div className="payment-modal-body">
+        <Tag color={STATUS_META[status].color} className="payment-modal-status">
           {STATUS_META[status].label}
         </Tag>
-        <Title level={4} style={{ marginTop: 0 }}>Số tiền: {amount.toLocaleString()}đ</Title>
-        <Text type="secondary" style={{ marginBottom: 12 }}>
+        <Title level={4} className="payment-modal-amount">
+          Số tiền: {amount.toLocaleString()}đ
+        </Title>
+        <Text type="secondary" className="payment-modal-description">
           {isVNPay
             ? "Nhấn 'Đến trang thanh toán' để đi tới VNPay và hoàn tất thanh toán."
             : "Mở ứng dụng để quét mã QR và xác nhận thanh toán."}
         </Text>
-        {!isVNPay && (
-          <div style={{ padding: 16, borderRadius: 12, border: "1px solid #f0f0f0", background: "#fff" }}>
+        {orderId ? (
+          <Text type="secondary" className="payment-modal-order">
+            Mã giao dịch: {orderId}
+          </Text>
+        ) : null}
+        {canShowQr ? (
+          <div className="payment-modal-qr">
             <img src={qrImageUrl} alt="QR Code" width={240} height={240} />
           </div>
-        )}
-        <Divider style={{ margin: "16px 0" }} />
+        ) : null}
+        <Divider className="payment-modal-divider" />
         <Space>
-          <Button icon={<CloseCircleOutlined />} onClick={onClose}>Hủy</Button>
-          <Button type="primary" icon={<CheckCircleFilled />} onClick={onConfirmPaid} loading={loading}>
-            {isVNPay ? "Đến trang thanh toán" : "Tôi đã quét xong"}
+          <Button icon={<CloseCircleOutlined />} onClick={onClose}>
+            Hủy
+          </Button>
+          {canOpenPaymentPage ? (
+            <Button
+              onClick={() =>
+                window.open(paymentUrl, "_blank", "noopener,noreferrer")
+              }
+            >
+              Mở trang VNPay
+            </Button>
+          ) : null}
+          <Button
+            type="primary"
+            icon={<CheckCircleFilled />}
+            onClick={onConfirmPaid}
+            loading={loading}
+          >
+            {confirmText ||
+              (isVNPay ? "Đến trang thanh toán" : "Tôi đã thanh toán")}
           </Button>
         </Space>
       </div>

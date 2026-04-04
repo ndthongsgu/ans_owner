@@ -1,12 +1,19 @@
 import { useProfile } from "@/hooks/auth/auth";
 import { useAuthHydrationStore, useAuthStore } from "@/hooks/auth/useAuthStore";
 import { Spin } from "antd";
+import { useEffect } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 export default function PrivateRoute() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, clearTokens } = useAuthStore();
   const { _hasHydrated } = useAuthHydrationStore();
   const profileQuery = useProfile();
+
+  useEffect(() => {
+    if (isAuthenticated && profileQuery.isError) {
+      clearTokens();
+    }
+  }, [clearTokens, isAuthenticated, profileQuery.isError]);
 
   if (!_hasHydrated) {
     return (
@@ -24,7 +31,6 @@ export default function PrivateRoute() {
   }
 
   if (isAuthenticated && profileQuery.isError) {
-    useAuthStore.getState().clearTokens();
     return <Navigate to="/login" replace />;
   }
 

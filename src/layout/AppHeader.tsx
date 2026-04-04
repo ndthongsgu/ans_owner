@@ -1,5 +1,4 @@
-﻿import NotificationBell from "@/components/notification/NotificationBell";
-import { useLogout } from "@/hooks/auth/auth";
+﻿import { useLogout } from "@/hooks/auth/auth";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useRouter } from "@/routes/hooks";
 import { LogoutOutlined, PhoneOutlined, UserOutlined } from "@ant-design/icons";
@@ -137,10 +136,6 @@ export default function AppHeader() {
       path: REQUIRE_AUTH_ROUTES.OWNER_SUBSCRIPTION_PACKAGE,
       label: "Gói đăng ký",
     },
-    {
-      path: REQUIRE_AUTH_ROUTES.OWNER_ANALYTICS_INTERACTION,
-      label: "Thống kê & Tương tác",
-    },
   ];
 
   return (
@@ -245,8 +240,6 @@ export default function AppHeader() {
             justifyContent: "flex-end",
           }}
         >
-          {isAuthenticated ? <NotificationBell /> : undefined}
-
           <Dropdown
             menu={isAuthenticated ? userMenu : guestMenu}
             placement="bottomRight"

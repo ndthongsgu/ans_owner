@@ -17,7 +17,7 @@ export interface CustomerProfile {
   // owner-specific fields (nullable)
   shopName?: string;
   shopLocation?: string;
-  narrationContent?: string;
+  stallContentScript?: string;
   subscription?: {
     id?: string;
     name?: string;

@@ -71,6 +71,48 @@
   margin-bottom: 20px;
 }
 
+.subscription-active-overview {
+  border-radius: 18px;
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: linear-gradient(145deg, #f0fdf4 0%, #ecfeff 100%);
+}
+
+.subscription-active-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.subscription-active-title {
+  margin-bottom: 4px !important;
+}
+
+.subscription-active-caption {
+  color: var(--color-text-secondary);
+}
+
+.subscription-active-tag {
+  border-radius: 999px;
+  padding-inline: 10px;
+}
+
+.subscription-active-metric {
+  border-radius: 14px;
+  height: 100%;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  box-shadow: none;
+}
+
+.subscription-active-metric-label {
+  color: var(--color-text-secondary);
+}
+
+.subscription-active-metric-value {
+  margin: 8px 0 0 !important;
+}
+
 .subscription-list-title {
   margin-bottom: 4px !important;
 }
@@ -119,34 +161,64 @@
   margin-bottom: 20px;
 }
 
+.subscription-package-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .subscription-package-amount {
   font-size: 30px;
   font-weight: 700;
   color: var(--color-text-primary);
 }
 
-.subscription-package-duration {
-  color: var(--color-text-secondary);
-}
-
-.subscription-feature-list {
-  width: 100%;
+.subscription-package-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-bottom: 24px;
 }
 
-.subscription-feature-item {
+.subscription-package-info-row {
   display: flex;
   align-items: center;
   gap: 10px;
   color: var(--color-text-secondary);
 }
 
-.subscription-feature-item .anticon {
+.subscription-package-info-row .anticon {
   color: var(--color-success);
+}
+
+.subscription-package-timestamp {
+  color: var(--color-text-secondary);
+}
+
+.subscription-test-card {
+  border-radius: 18px;
+}
+
+.subscription-debug-json {
+  margin: 0;
+  max-height: 360px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 @media (max-width: 992px) {
   .subscription-hero {
     grid-template-columns: 1fr;
+  }
+
+  .subscription-active-head {
+    flex-direction: column;
   }
 }

@@ -73,20 +73,32 @@ export default function HomeScreen() {
               GIẢI PHÁP CHO CHỦ QUÁN ĂN
             </Tag>
             <Title level={2} style={{ color: "#fff", margin: 0 }}>
-              Hệ thống thuyết minh tự động giúp quán ăn phục vụ chuyên nghiệp hơn
+              Hệ thống thuyết minh tự động giúp quán ăn phục vụ chuyên nghiệp
+              hơn
             </Title>
-            <Paragraph style={{ color: "rgba(255,255,255,0.9)", fontSize: 16, margin: 0 }}>
-              STREET FOOD GO giúp bạn biến menu thành trải nghiệm âm thanh: nhanh, dễ hiểu, giảm tải cho nhân viên và
-              tăng khả năng upsell món.
+            <Paragraph
+              style={{
+                color: "rgba(255,255,255,0.9)",
+                fontSize: 16,
+                margin: 0,
+              }}
+            >
+              STREET FOOD GO giúp bạn biến menu thành trải nghiệm âm thanh:
+              nhanh, dễ hiểu, giảm tải cho nhân viên và tăng khả năng upsell
+              món.
             </Paragraph>
             <Space wrap>
-              <Link to={PUBLIC_ROUTES.SEARCH_BOOKING}>
-                <Button type="primary" size="large" icon={<CheckCircleOutlined />}>
+              <Link to={PUBLIC_ROUTES.REGISTER}>
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                >
                   Đăng ký demo
                 </Button>
               </Link>
-              <Link to={PUBLIC_ROUTES.BOOKING}>
-                <Button size="large">Xem bảng giá</Button>
+              <Link to={PUBLIC_ROUTES.LOGIN}>
+                <Button size="large">Đăng nhập quản trị</Button>
               </Link>
             </Space>
           </Space>
@@ -135,7 +147,9 @@ export default function HomeScreen() {
                 <Card style={{ borderRadius: 14, height: "100%" }}>
                   <div style={{ marginBottom: 12 }}>{item.icon}</div>
                   <Title level={4}>{item.title}</Title>
-                  <Paragraph style={{ marginBottom: 0 }}>{item.description}</Paragraph>
+                  <Paragraph style={{ marginBottom: 0 }}>
+                    {item.description}
+                  </Paragraph>
                 </Card>
               </Col>
             ))}
@@ -148,7 +162,10 @@ export default function HomeScreen() {
             <Row gutter={[20, 20]}>
               {steps.map((step, index) => (
                 <Col xs={24} sm={12} md={6} key={step}>
-                  <Card size="small" style={{ borderRadius: 12, textAlign: "center" }}>
+                  <Card
+                    size="small"
+                    style={{ borderRadius: 12, textAlign: "center" }}
+                  >
                     <Tag color="green" style={{ marginBottom: 10 }}>
                       Bước {index + 1}
                     </Tag>

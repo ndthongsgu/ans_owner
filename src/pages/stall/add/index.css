@@ -1,13 +1,69 @@
+.stall-map-shell {
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid #d9e4ff;
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 60%);
+}
+
+.stall-map-head {
+  margin-bottom: 10px;
+}
+
+.stall-map-canvas {
+  margin-top: 16px;
+  position: relative;
+}
+
+.stall-map-badge {
+  position: absolute;
+  z-index: 500;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #cdd9ff;
+  background: rgba(255, 255, 255, 0.94);
+  color: #3557a7;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 6px 16px rgba(34, 63, 142, 0.12);
+}
+
 .stall-add-map {
   width: 100%;
-  height: 260px;
-  border-radius: 10px;
+  height: 420px;
+  border-radius: 12px;
   overflow: hidden;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #dbe5ff;
+  box-shadow: 0 12px 28px rgba(18, 42, 110, 0.14);
+}
+
+.stall-add-map .leaflet-control-zoom {
+  border: none;
+  box-shadow: 0 10px 20px rgba(13, 37, 99, 0.18);
+}
+
+.stall-add-map .leaflet-control-zoom a {
+  width: 34px;
+  height: 34px;
+  line-height: 32px;
+  border: none;
+  color: #264380;
+}
+
+.stall-add-map .leaflet-control-zoom a:hover {
+  background: #edf3ff;
 }
 
 .stall-file-input-hidden {
   display: none;
+}
+
+.stall-cover-action-btn {
+  min-height: 42px;
+  padding-inline: 16px;
+  font-weight: 500;
 }
 
 .stall-cover-preview {
@@ -16,4 +72,8 @@
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #f0f0f0;
+}
+
+.stall-location-item .ant-form-item-explain {
+  margin-top: 4px;
 }

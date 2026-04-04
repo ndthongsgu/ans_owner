@@ -1,4 +1,9 @@
-import { useOwnerProfile } from "@/hooks/owner";
+import {
+  useStalls,
+  useCreateStall,
+  useUpdateStall,
+  useDeleteStall,
+} from "@/hooks/stall/index";
 import {
   AppstoreAddOutlined,
   DeleteOutlined,
@@ -11,8 +16,6 @@ import {
   Button,
   Card,
   Col,
-  Descriptions,
-  Form,
   Image,
   Input,
   Modal,
@@ -20,31 +23,31 @@ import {
   Row,
   Select,
   Space,
-  Tag,
   Table,
   type TableColumnsType,
   Typography,
   message,
 } from "antd";
-import { useMemo, useState } from "react";
-import {
-  categoryOptions,
-  DEFAULT_MAIN_COVER_IMAGE,
-  DEFAULT_NEW_COVER_IMAGE,
-  priceOptions,
-} from "@/constants/stall.constants";
-import type { StallItem } from "@/dto/stall.dto";
-import { makeId } from "@/utils/stall.utils";
-import StallAddModal from "./add";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DEFAULT_NEW_COVER_IMAGE } from "@/constants/stall.constants";
+import type { StallResponse } from "@/dto/stall.dto";
+import { useToast } from "@/hooks/layout/useToast";
+import { reverseGeocode } from "@/services/location.service";
+import { API_ROUTES } from "@/services/api-route";
+import { formatCoordinates, normalizeCoordinate } from "@/utils/location.utils";
+import { hourValueToString } from "@/utils/stall.utils";
+import StallAddModal, { type StallAddFormValues } from "./add";
+import StallEditModal, { type StallEditSubmitValues } from "./edit/index";
+import StallDetail from "./detail";
 import "./index.css";
 
-const { Text } = Typography;
-
 export default function StallPage() {
-  const { data: profile } = useOwnerProfile();
-  const owner = profile?.owner;
-  const [addStallForm] = Form.useForm<StallItem>();
-  const [editStallForm] = Form.useForm<StallItem>();
+  const showToast = useToast();
+  const { data: stalls = [], isLoading } = useStalls();
+  const createStallMutation = useCreateStall();
+  const updateStallMutation = useUpdateStall();
+  const deleteStallMutation = useDeleteStall();
+
   const [isAddStallModalOpen, setIsAddStallModalOpen] = useState(false);
   const [isEditStallModalOpen, setIsEditStallModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -52,127 +55,427 @@ export default function StallPage() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriceRange, setFilterPriceRange] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
-  const [editingStallId, setEditingStallId] = useState<string | null>(null);
-  const [detailStall, setDetailStall] = useState<StallItem | null>(null);
+  const [pageSize, setPageSize] = useState(5);
+  const [editingStall, setEditingStall] = useState<StallResponse | null>(null);
+  const [detailStall, setDetailStall] = useState<StallResponse | null>(null);
+  const [resolvedAddressByKey, setResolvedAddressByKey] = useState<
+    Record<string, string>
+  >({});
+  const pendingAddressLookupRef = useRef<Set<string>>(new Set());
+  const resolvedAddressByKeyRef = useRef<Record<string, string>>({});
 
-  const defaultStall = useMemo<StallItem[]>(() => {
-    const name = owner?.business_name || "Quán của tôi";
-    const location = owner?.business_address || "Chưa cập nhật địa chỉ";
+  useEffect(() => {
+    resolvedAddressByKeyRef.current = resolvedAddressByKey;
+  }, [resolvedAddressByKey]);
 
-    return [
-      {
-        id: "stall-main",
-        name,
-        location,
-        coverImage: DEFAULT_MAIN_COVER_IMAGE,
-        openTime: "08:00",
-        closeTime: "22:00",
-        category: "Món Việt",
-        priceRange: "Tầm trung",
-      },
-    ];
-  }, [owner?.business_address, owner?.business_name]);
+  const getCoordinateKey = (stall: StallResponse): string | null => {
+    if (
+      typeof stall.latitude !== "number" ||
+      !Number.isFinite(stall.latitude) ||
+      typeof stall.longitude !== "number" ||
+      !Number.isFinite(stall.longitude)
+    ) {
+      return null;
+    }
 
-  const [stalls, setStalls] = useState<StallItem[]>(() => defaultStall);
+    const lat = normalizeCoordinate(stall.latitude, 6);
+    const lng = normalizeCoordinate(stall.longitude, 6);
+    return `${lat},${lng}`;
+  };
+
+  const getStallAddress = useCallback(
+    (stall: StallResponse) => {
+      const location = (stall as unknown as { location?: string }).location;
+      if (location && location.trim().length > 0) {
+        return location;
+      }
+
+      const key = getCoordinateKey(stall);
+      if (key && resolvedAddressByKey[key]) {
+        return resolvedAddressByKey[key];
+      }
+
+      if (key) {
+        const [lat, lng] = key.split(",").map((value) => Number(value));
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          return formatCoordinates(lat, lng, 6);
+        }
+      }
+
+      return "Chưa cập nhật địa chỉ";
+    },
+    [resolvedAddressByKey],
+  );
+
+  const getCoverImage = (stall: StallResponse) => {
+    const rawImage = (stall.cover_image || "").trim();
+    if (!rawImage) {
+      return DEFAULT_NEW_COVER_IMAGE;
+    }
+
+    if (
+      rawImage.startsWith("data:image/") ||
+      rawImage.startsWith("http://") ||
+      rawImage.startsWith("https://") ||
+      rawImage.startsWith("blob:")
+    ) {
+      return rawImage;
+    }
+
+    const looksLikeBase64 =
+      /^[A-Za-z0-9+/]+=*$/.test(rawImage) && rawImage.length > 100;
+    if (looksLikeBase64) {
+      return `data:image/jpeg;base64,${rawImage}`;
+    }
+
+    if (rawImage.startsWith("/")) {
+      return `${API_ROUTES.BASE_URL}${rawImage}`;
+    }
+
+    return `${API_ROUTES.BASE_URL}/${rawImage}`;
+  };
+
+  const getPriceRange = (stall: StallResponse) =>
+    stall.price_range || "Chưa cập nhật";
+
+  const getOpeningHours = (stall: StallResponse) => {
+    try {
+      return hourValueToString(stall.opening_hours);
+    } catch {
+      return "--:--";
+    }
+  };
+
+  const getClosingHours = (stall: StallResponse) => {
+    try {
+      return hourValueToString(stall.close_hours);
+    } catch {
+      return "--:--";
+    }
+  };
+
+  const closeAddStallModal = () => {
+    setIsAddStallModalOpen(false);
+  };
+
+  const closeEditStallModal = () => {
+    setIsEditStallModalOpen(false);
+    setEditingStall(null);
+  };
+
+  const closeDetailStallModal = () => {
+    setIsDetailModalOpen(false);
+    setDetailStall(null);
+  };
+
+  const handleKnownUpsertError = (error: unknown) => {
+    if (
+      error instanceof Error &&
+      error.message === "missing-location-coordinates"
+    ) {
+      showToast({
+        type: "warning",
+        title: "Thiếu tọa độ",
+        message: "Thiếu tọa độ vị trí. Vui lòng nhập hoặc chọn trên bản đồ",
+      });
+      return true;
+    }
+
+    if (error instanceof Error && error.message === "invalid-hour-format") {
+      showToast({
+        type: "warning",
+        title: "Sai định dạng giờ",
+        message: "Giờ mở/đóng cửa phải đúng định dạng HH:mm",
+      });
+      return true;
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "invalid-operating-hours-order"
+    ) {
+      showToast({
+        type: "warning",
+        title: "Giờ hoạt động chưa hợp lệ",
+        message: "Giờ đóng cửa phải sau giờ mở cửa và không được bằng nhau",
+      });
+      return true;
+    }
+
+    if (
+      error &&
+      typeof error === "object" &&
+      "errorFields" in error &&
+      Array.isArray(error.errorFields) &&
+      error.errorFields.length > 0
+    ) {
+      showToast({
+        type: "warning",
+        title: "Thiếu thông tin",
+        message: "Vui lòng điền đầy đủ thông tin cần thiết",
+      });
+      return true;
+    }
+
+    return false;
+  };
+
+  const resolveCoordinatesForPayload = (values: {
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    const currentLat = values.latitude;
+    const currentLng = values.longitude;
+
+    if (
+      typeof currentLat === "number" &&
+      Number.isFinite(currentLat) &&
+      typeof currentLng === "number" &&
+      Number.isFinite(currentLng)
+    ) {
+      return {
+        latitude: Number(currentLat.toFixed(6)),
+        longitude: Number(currentLng.toFixed(6)),
+      };
+    }
+
+    throw new Error("missing-location-coordinates");
+  };
+
+  const ensureOperatingHoursOrder = (
+    opening_hours: unknown,
+    close_hours: unknown,
+  ) => {
+    const openingText = hourValueToString(opening_hours);
+    const closingText = hourValueToString(close_hours);
+
+    if (closingText <= openingText) {
+      throw new Error("invalid-operating-hours-order");
+    }
+
+    return { opening_hours: openingText, close_hours: closingText };
+  };
+
   const filteredStalls = useMemo(() => {
     return stalls.filter((stall) => {
       const kw = keyword.trim().toLowerCase();
+      const address = getStallAddress(stall).toLowerCase();
+      const category = stall.category || "";
+      const price_range = getPriceRange(stall);
       const matchedKeyword =
-        !kw ||
-        stall.name.toLowerCase().includes(kw) ||
-        stall.location.toLowerCase().includes(kw);
+        !kw || stall.name.toLowerCase().includes(kw) || address.includes(kw);
       const matchedCategory =
-        filterCategory === "all" || stall.category === filterCategory;
+        filterCategory === "all" || category === filterCategory;
       const matchedPrice =
-        filterPriceRange === "all" || stall.priceRange === filterPriceRange;
+        filterPriceRange === "all" || price_range === filterPriceRange;
 
       return matchedKeyword && matchedCategory && matchedPrice;
     });
-  }, [filterCategory, filterPriceRange, keyword, stalls]);
+  }, [filterCategory, filterPriceRange, getStallAddress, keyword, stalls]);
+
+  const visibleStalls = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredStalls.slice(start, end);
+  }, [currentPage, filteredStalls, pageSize]);
+
+  useEffect(() => {
+    const uniqueCandidatesByKey = new Map<
+      string,
+      { lat: number; lng: number }
+    >();
+
+    visibleStalls.forEach((stall) => {
+      const location = (stall as unknown as { location?: string }).location;
+      const key = getCoordinateKey(stall);
+
+      if (!key || (location && location.trim().length > 0)) {
+        return;
+      }
+
+      if (
+        resolvedAddressByKeyRef.current[key] ||
+        pendingAddressLookupRef.current.has(key)
+      ) {
+        return;
+      }
+
+      uniqueCandidatesByKey.set(key, {
+        lat: stall.latitude as number,
+        lng: stall.longitude as number,
+      });
+      pendingAddressLookupRef.current.add(key);
+    });
+
+    const candidates = Array.from(uniqueCandidatesByKey.entries()).map(
+      ([key, coordinates]) => ({ key, ...coordinates }),
+    );
+
+    if (!candidates.length) {
+      return;
+    }
+
+    let active = true;
+
+    void Promise.all(
+      candidates.map(async ({ key, lat, lng }) => {
+        const address = await reverseGeocode(lat, lng);
+        return { key, address };
+      }),
+    )
+      .then((results) => {
+        if (!active) {
+          return;
+        }
+
+        setResolvedAddressByKey((prev) => {
+          const next = { ...prev };
+          results.forEach(({ key, address }) => {
+            next[key] = address;
+          });
+          return next;
+        });
+      })
+      .finally(() => {
+        candidates.forEach(({ key }) => {
+          pendingAddressLookupRef.current.delete(key);
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [visibleStalls]);
+
+  const categoryFilterOptions = useMemo(() => {
+    const categories = Array.from(
+      new Set(
+        stalls.map((stall) => (stall.category || "").trim()).filter(Boolean),
+      ),
+    );
+
+    return [
+      { label: "Tất cả danh mục", value: "all" },
+      ...categories.map((category) => ({ label: category, value: category })),
+    ];
+  }, [stalls]);
+
+  const priceFilterOptions = useMemo(() => {
+    const prices = Array.from(
+      new Set(
+        stalls.map((stall) => getPriceRange(stall).trim()).filter(Boolean),
+      ),
+    );
+
+    return [
+      { label: "Tất cả mức giá", value: "all" },
+      ...prices.map((price) => ({ label: price, value: price })),
+    ];
+  }, [stalls]);
 
   const handleOpenAddStallModal = () => {
-    addStallForm.setFieldsValue({
-      name: `Quán mới ${stalls.length + 1}`,
-      location: "Chưa cập nhật địa chỉ",
-      coverImage: DEFAULT_NEW_COVER_IMAGE,
-      openTime: "09:00",
-      closeTime: "21:00",
-      category: "Món Việt",
-      priceRange: "Tầm trung",
-    });
     setIsAddStallModalOpen(true);
   };
 
-  const handleCreateStall = async () => {
+  const handleCreateStall = async (values: StallAddFormValues) => {
     try {
-      const values = await addStallForm.validateFields();
-      const nextStall: StallItem = {
-        ...values,
-        id: makeId(),
-        coverImage: values.coverImage || DEFAULT_NEW_COVER_IMAGE,
-      };
+      const coordinates = resolveCoordinatesForPayload(values);
+      const operatingHours = ensureOperatingHoursOrder(
+        values.opening_hours,
+        values.close_hours,
+      );
+      const payloadValues = { ...values };
+      delete payloadValues.location;
 
-      setStalls((prev) => [nextStall, ...prev]);
+      await createStallMutation.mutateAsync({
+        ...payloadValues,
+        ...coordinates,
+        opening_hours: operatingHours.opening_hours,
+        close_hours: operatingHours.close_hours,
+        cover_image: values.cover_image,
+      });
       setCurrentPage(1);
-      setIsAddStallModalOpen(false);
-      addStallForm.resetFields();
-      message.success("Đã thêm quán mới");
-    } catch {
-      message.warning("Vui lòng điền đầy đủ thông tin quán mới");
+      closeAddStallModal();
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Đã thêm quán mới",
+      });
+    } catch (error) {
+      if (!handleKnownUpsertError(error)) {
+        showToast({
+          type: "error",
+          title: "Tạo quán thất bại",
+          message: "Có lỗi xảy ra khi tạo quán. Vui lòng thử lại",
+        });
+      }
     }
   };
 
-  const handleOpenEditStall = (stall: StallItem) => {
-    setEditingStallId(stall.id);
-    editStallForm.setFieldsValue(stall);
+  const handleOpenEditStall = (stall: StallResponse) => {
+    setEditingStall(stall);
     setIsEditStallModalOpen(true);
   };
 
-  const handleUpdateStall = async () => {
+  const handleUpdateStall = async (values: StallEditSubmitValues) => {
     try {
-      const values = await editStallForm.validateFields();
-      if (!editingStallId) return;
-
-      setStalls((prev) =>
-        prev.map((item) =>
-          item.id === editingStallId
-            ? {
-                ...item,
-                ...values,
-                id: editingStallId,
-              }
-            : item,
-        ),
+      if (!editingStall?.id) return;
+      const coordinates = resolveCoordinatesForPayload(values);
+      const operatingHours = ensureOperatingHoursOrder(
+        values.opening_hours,
+        values.close_hours,
       );
-      setIsEditStallModalOpen(false);
-      setEditingStallId(null);
-      editStallForm.resetFields();
-      message.success("Đã lưu thông tin quán");
-    } catch {
-      message.warning("Vui lòng nhập đầy đủ thông tin");
+
+      await updateStallMutation.mutateAsync({
+        ...values,
+        ...coordinates,
+        opening_hours: operatingHours.opening_hours,
+        close_hours: operatingHours.close_hours,
+        cover_image: values.cover_image,
+        price_range: values.price_range,
+        id: editingStall.id,
+      });
+      closeEditStallModal();
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Đã lưu thông tin quán",
+      });
+    } catch (error) {
+      if (!handleKnownUpsertError(error)) {
+        showToast({
+          type: "error",
+          title: "Cập nhật thất bại",
+          message: "Có lỗi xảy ra khi cập nhật quán. Vui lòng thử lại",
+        });
+      }
     }
   };
 
-  const handleDeleteStall = (stallId: string) => {
-    setStalls((prev) => prev.filter((item) => item.id !== stallId));
-    message.success("Đã xóa quán");
+  const handleDeleteStall = async (stallId: string) => {
+    try {
+      await deleteStallMutation.mutateAsync(stallId);
+      message.success("Đã xóa quán");
+    } catch {
+      message.error("Không thể xóa quán. Vui lòng thử lại.");
+    }
   };
 
-  const handleOpenDetail = (stall: StallItem) => {
+  const handleOpenDetail = (stall: StallResponse) => {
     setDetailStall(stall);
     setIsDetailModalOpen(true);
   };
 
-  const stallColumns: TableColumnsType<StallItem> = [
+  const stallColumns: TableColumnsType<StallResponse> = [
     {
-      title: "Ảnh",
-      dataIndex: "coverImage",
-      key: "coverImage",
+      title: "Thumbnail",
+      dataIndex: "cover_image",
+      key: "cover_image",
       width: 90,
-      render: (coverImage: string, record) => (
+      render: (_, record) => (
         <Image
-          src={coverImage}
+          src={getCoverImage(record)}
+          fallback={DEFAULT_NEW_COVER_IMAGE}
           alt={record.name}
           className="stall-table-thumbnail"
           preview={false}
@@ -184,10 +487,9 @@ export default function StallPage() {
       dataIndex: "name",
       key: "name",
       width: 180,
-      render: (name: string, record) => (
+      render: (name: string) => (
         <Space direction="vertical" size={2}>
           <Typography.Text strong>{name}</Typography.Text>
-          <Text type="secondary">{record.location}</Text>
         </Space>
       ),
     },
@@ -196,29 +498,32 @@ export default function StallPage() {
       dataIndex: "category",
       key: "category",
       width: 120,
-      render: (value: string) => <Tag>{value}</Tag>,
+      render: (value: string) => <Typography.Text>{value}</Typography.Text>,
     },
     {
       title: "Mức giá",
-      dataIndex: "priceRange",
-      key: "priceRange",
+      dataIndex: "price_range",
+      key: "price_range",
       width: 120,
-      render: (value: string) => <Tag color="gold">{value}</Tag>,
+      render: (_, record) => (
+        <Typography.Text>{getPriceRange(record)}</Typography.Text>
+      ),
     },
     {
-      title: "Giờ mở cửa",
+      title: "Giờ hoạt động",
       key: "operatingHours",
       width: 150,
       render: (_, record) => (
-        <Tag>
-          {record.openTime} - {record.closeTime}
-        </Tag>
+        <Typography.Text>
+          {getOpeningHours(record)} - {getClosingHours(record)}
+        </Typography.Text>
       ),
     },
     {
       title: "Thao tác",
       key: "actions",
-      width: 220,
+      width: 300,
+      fixed: "right",
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -253,6 +558,19 @@ export default function StallPage() {
 
   return (
     <Space direction="vertical" size="middle" className="stall-page-wrap">
+      <Card
+        title="Quản lý quán ăn"
+        extra={
+          <Button
+            type="primary"
+            icon={<AppstoreAddOutlined />}
+            onClick={handleOpenAddStallModal}
+          >
+            Thêm quán mới
+          </Button>
+        }
+      />
+
       <Card>
         <Row gutter={[12, 12]} align="middle">
           <Col xs={24} md={10}>
@@ -264,17 +582,14 @@ export default function StallPage() {
                 setCurrentPage(1);
               }}
               prefix={<SearchOutlined />}
-              placeholder="Tìm theo tên quán hoặc địa chỉ"
+              placeholder="Tìm theo tên quán hoặc tọa độ"
             />
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Select
               size="large"
               value={filterCategory}
-              options={[
-                { label: "Tất cả danh mục", value: "all" },
-                ...categoryOptions,
-              ]}
+              options={categoryFilterOptions}
               onChange={(value) => {
                 setFilterCategory(value);
                 setCurrentPage(1);
@@ -286,10 +601,7 @@ export default function StallPage() {
             <Select
               size="large"
               value={filterPriceRange}
-              options={[
-                { label: "Tất cả mức giá", value: "all" },
-                ...priceOptions,
-              ]}
+              options={priceFilterOptions}
               onChange={(value) => {
                 setFilterPriceRange(value);
                 setCurrentPage(1);
@@ -313,24 +625,7 @@ export default function StallPage() {
           </Col>
         </Row>
       </Card>
-
-      <Card
-        title="Danh sách quán của tôi"
-        extra={
-          <Button
-            type="primary"
-            icon={<AppstoreAddOutlined />}
-            onClick={handleOpenAddStallModal}
-          >
-            Thêm quán mới
-          </Button>
-        }
-      >
-        <Text type="secondary">
-          Tìm thấy {filteredStalls.length} quán phù hợp. Quản lý trực tiếp bằng
-          các nút thao tác trên từng dòng.
-        </Text>
-
+      <Card>
         <Table
           className="stall-list-table"
           rowKey="id"
@@ -338,140 +633,47 @@ export default function StallPage() {
           dataSource={filteredStalls}
           size="middle"
           scroll={{ x: 980 }}
+          loading={isLoading}
           pagination={{
             current: currentPage,
             pageSize,
             total: filteredStalls.length,
             showSizeChanger: true,
-            pageSizeOptions: ["3", "6", "9", "12"],
+            pageSizeOptions: ["5", "10", "50", "100"],
             onChange: (page, size) => {
               setCurrentPage(page);
               setPageSize(size);
             },
-            showTotal: (total, range) =>
-              `${range[0]}-${range[1]} / ${total} quán`,
           }}
         />
       </Card>
-
       <StallAddModal
         open={isAddStallModalOpen}
-        form={addStallForm}
-        onCancel={() => {
-          setIsAddStallModalOpen(false);
-          addStallForm.resetFields();
-        }}
-        onCreate={handleCreateStall}
+        onCancel={closeAddStallModal}
+        onSubmit={handleCreateStall}
+        submitting={createStallMutation.isPending}
       />
-
-      <Modal
-        title="Chỉnh sửa quán"
+      <StallEditModal
         open={isEditStallModalOpen}
-        onCancel={() => {
-          setIsEditStallModalOpen(false);
-          setEditingStallId(null);
-          editStallForm.resetFields();
-        }}
-        onOk={handleUpdateStall}
-        okText="Lưu"
-        cancelText="Hủy"
-        destroyOnClose
-      >
-        <Form form={editStallForm} layout="vertical">
-          <Form.Item
-            name="name"
-            label="Tên quán"
-            rules={[{ required: true, message: "Vui lòng nhập tên quán" }]}
-          >
-            <Input size="large" />
-          </Form.Item>
-          <Form.Item
-            name="location"
-            label="Địa chỉ"
-            rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-          >
-            <Input size="large" />
-          </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item
-                name="category"
-                label="Danh mục"
-                rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
-              >
-                <Select size="large" options={categoryOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="priceRange"
-                label="Mức giá"
-                rules={[{ required: true, message: "Vui lòng chọn mức giá" }]}
-              >
-                <Select size="large" options={priceOptions} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item
-                name="openTime"
-                label="Giờ mở cửa"
-                rules={[
-                  { required: true, message: "Vui lòng nhập giờ mở cửa" },
-                ]}
-              >
-                <Input size="large" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="closeTime"
-                label="Giờ đóng cửa"
-                rules={[
-                  { required: true, message: "Vui lòng nhập giờ đóng cửa" },
-                ]}
-              >
-                <Input size="large" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="coverImage" label="URL ảnh bìa">
-            <Input size="large" placeholder="https://..." />
-          </Form.Item>
-        </Form>
-      </Modal>
-
+        stall={editingStall}
+        onCancel={closeEditStallModal}
+        onSubmit={handleUpdateStall}
+        submitting={updateStallMutation.isPending}
+      />
       <Modal
         title="Chi tiết quán"
         open={isDetailModalOpen}
-        onCancel={() => {
-          setIsDetailModalOpen(false);
-          setDetailStall(null);
-        }}
+        onCancel={closeDetailStallModal}
         footer={null}
       >
         {detailStall ? (
-          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-            <Image src={detailStall.coverImage} alt={detailStall.name} />
-            <Descriptions column={1} bordered size="small">
-              <Descriptions.Item label="Tên quán">
-                {detailStall.name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Địa chỉ">
-                {detailStall.location}
-              </Descriptions.Item>
-              <Descriptions.Item label="Danh mục">
-                {detailStall.category}
-              </Descriptions.Item>
-              <Descriptions.Item label="Mức giá">
-                {detailStall.priceRange}
-              </Descriptions.Item>
-              <Descriptions.Item label="Giờ hoạt động">
-                {detailStall.openTime} - {detailStall.closeTime}
-              </Descriptions.Item>
-            </Descriptions>
-          </Space>
+          <StallDetail
+            stall={detailStall}
+            getStallAddress={getStallAddress}
+            getPriceRange={getPriceRange}
+            getOpeningHours={getOpeningHours}
+            getClosingHours={getClosingHours}
+          />
         ) : null}
       </Modal>
     </Space>

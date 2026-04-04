@@ -1,9 +1,6 @@
 import { Button, Card, Form, Input, message, Typography } from "antd";
-import {
-  useOwnerProfile,
-  useOwnerSubscription,
-  useUpdateOwnerProfile,
-} from "@/hooks/owner";
+import { useProfile, useUpdateProfile } from "@/hooks/owner";
+import { useMySubscription } from "@/hooks/subscription";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
@@ -12,9 +9,9 @@ const { Title } = Typography;
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { data: profile } = useOwnerProfile();
-  const { data: subscription } = useOwnerSubscription();
-  const updateProfileMutation = useUpdateOwnerProfile();
+  const { data: profile } = useProfile();
+  const { data: subscription } = useMySubscription();
+  const updateProfileMutation = useUpdateProfile();
   const [form] = Form.useForm();
 
   const owner = profile?.owner;
