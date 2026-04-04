@@ -12,15 +12,15 @@ export interface CustomerProfileUpdate {
   // Owner/shop specific (optional)
   shopName?: string;
   shopLocation?: string;
-  narrationContent?: string;
+  stallContentScript?: string;
   // subscription id when selecting a package
   subscriptionId?: string;
 }
 
 export const useGetCurrentUser = () => {
   return useQuery({
-    queryKey: [API_ENDPOINTS.USER.GET_ME],
-    queryFn: () => rootApiService.get<UserProfile>(API_ENDPOINTS.USER.GET_ME),
+    queryKey: [API_ENDPOINTS.OWNER.ME],
+    queryFn: () => rootApiService.get<UserProfile>(API_ENDPOINTS.OWNER.ME),
     retry: false,
   });
 };
@@ -30,9 +30,9 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: (data: CustomerProfileUpdate) =>
-      rootApiService.put(API_ENDPOINTS.USER.UPDATE_PROFILE, data),
+      rootApiService.put(API_ENDPOINTS.OWNER.UPDATE_PROFILE, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.USER.GET_ME] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.ME] });
     },
   });
 };
@@ -42,9 +42,9 @@ export const useSetupCredentials = () => {
 
   return useMutation({
     mutationFn: (data: CustomerProfileUpdate) =>
-      rootApiService.post(API_ENDPOINTS.USER.SETUP_CREDENTIALS, data),
+      rootApiService.post(API_ENDPOINTS.OWNER.UPDATE_PROFILE, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.USER.GET_ME] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.ME] });
     },
   });
 };

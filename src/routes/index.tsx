@@ -28,18 +28,6 @@ const RequireAuthRoutes = [
         element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.CHANGE_PASSWORD],
       },
       {
-        path: REQUIRE_AUTH_ROUTES.NOTIFICATION_LIST,
-        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.NOTIFICATION_LIST],
-      },
-      {
-        path: REQUIRE_AUTH_ROUTES.NOTIFICATION_DETAIL,
-        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.NOTIFICATION_DETAIL],
-      },
-      {
-        path: REQUIRE_AUTH_ROUTES.BOOKING_HISTORY,
-        element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.BOOKING_HISTORY],
-      },
-      {
         path: REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD,
         element: REQUIRE_AUTH_SCREEN[REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD],
       },
@@ -118,6 +106,10 @@ const PublicRoutes = [
       {
         index: true,
         element: PUBLIC_SCREENS[PUBLIC_ROUTES.HOME],
+      },
+      {
+        path: PUBLIC_ROUTES.PAYMENT,
+        element: PUBLIC_SCREENS[PUBLIC_ROUTES.PAYMENT],
       },
     ],
   },

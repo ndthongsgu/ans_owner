@@ -1,0 +1,95 @@
+.stall-content-page-wrap {
+  width: 100%;
+}
+
+.stall-content-page-wrap > .ant-space-item {
+  width: 100%;
+}
+
+.stall-content-page-wrap .ant-card {
+  border: 0;
+}
+
+.stall-content-kpi-card {
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.stall-content-kpi-value {
+  margin-top: 4px;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #1d39c4;
+}
+
+.stall-content-header-card .ant-card-head {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.stall-content-header-card .ant-card-head-title,
+.stall-content-header-card .ant-card-extra {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.stall-content-table {
+  margin-top: 0;
+}
+
+.stall-content-summary-text {
+  display: block;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stall-content-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stall-content-full-width {
+  width: 100%;
+}
+
+.stall-content-source-help {
+  display: block;
+  margin-top: 4px;
+}
+
+.stall-content-audio-preview {
+  width: 100%;
+}
+
+.stall-language-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stall-language-card {
+  border-radius: 10px;
+}
+
+.stall-content-detail-wrap {
+  width: 100%;
+}
+
+.stall-content-script-text {
+  display: block;
+  white-space: pre-wrap;
+}
+
+.stall-content-listen-actions {
+  margin-top: 12px;
+}
+
+@media (max-width: 992px) {
+  .stall-content-modal-grid {
+    grid-template-columns: 1fr;
+  }
+}

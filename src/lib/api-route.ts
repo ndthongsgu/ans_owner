@@ -1,5 +1,5 @@
 export const API_ROUTES = {
-  BASE_URL: import.meta.env.VITE_API_CHAT_URL,
+  BASE_URL: "",
   TIMEOUT: 100000,
   HEADERS: {
     "Content-Type": "application/json",
@@ -14,9 +14,6 @@ export const API_ENDPOINTS = {
     REFRESH: "/api/auth/refresh",
     PROFILE: "/api/auth/profile",
   },
-  CHAT: {
-    PROMPT: "/api/chat/prompt",
-  }
 };
 
 export default API_ENDPOINTS;

@@ -27,23 +27,42 @@ export const API_ENDPOINTS = {
       PURCHASE: (id: string) => `/owner/subscription-packages/${id}/purchase`,
       MY: "/owner/subscription-packages/my-subscription",
     },
-  },
-  USER: {
-    GET_ME: "/user/me",
-    UPDATE_PROFILE: "/user/profile",
-    SETUP_CREDENTIALS: "/user/setup-credentials",
+    STALLS: {
+      LIST: "/owner/stalls",
+      CREATE: "/owner/stalls",
+      UPDATE: (id: string) => `/owner/stalls/${id}`,
+      DELETE: (id: string) => `/owner/stalls/${id}`,
+    },
+    STALL_CONTENT: {
+      LIST: () => `/owner/stall-contents/all`,
+      AVAILABLE_STALLS: () => `/owner/stall-contents/available-stalls`,
+      CREATE: () => `/owner/stall-contents`,
+      DETAIL: (stallId: string, contentId: string) =>
+        `/owner/stall-contents/${stallId}/${contentId}`,
+      UPDATE: (stallId: string, contentId: string) =>
+        `/owner/stall-contents/${stallId}/${contentId}`,
+      DELETE: (stallId: string, contentId: string) =>
+        `/owner/stall-contents/${stallId}/${contentId}`,
+      AVAILABLE_LANGUAGES: (stallId: string) =>
+        `/owner/stall-contents/${stallId}/available-languages`,
+      BY_LANGUAGE: (stallId: string, languageCode: string) =>
+        `/owner/stall-contents/${stallId}/language/${languageCode}`,
+      TOGGLE: (stallId: string, contentId: string) =>
+        `/owner/stall-contents/${stallId}/${contentId}/toggle`,
+    },
   },
   SUBSCRIPTION: {
-    LIST: "/subscription-packages",
-    PURCHASE: (id: string) => `/subscription-packages/${id}/purchase`,
-    MY: "/subscription-packages/my-subscription",
+    LIST: "/owner/subscription-packages",
+    REGISTER: `/owner/subscription-packages/register`,
+    MY: "/owner/subscription-packages/my-subscription",
+  },
+  PAYMENTS: {
+    VNPAY_CREATE: "/user/payments/vnpay/create",
+    VNPAY_STATUS: (orderId: string) => `/user/payments/vnpay/${orderId}/status`,
   },
   OAUTH: {
     GOOGLE: "/oauth2/authorization/google",
     CALLBACK: "/oauth/callback",
-  },
-  TRIP: {
-    SEARCH_BY_ROUTE: "/user/trips/by-route",
   },
   ROUTE: {
     ALL: "/user/routes/all",
@@ -52,16 +71,6 @@ export const API_ENDPOINTS = {
     START_LOCATIONS: "/user/routes/start-locations",
     END_LOCATIONS: "/user/routes/end-locations",
     END_LOCATIONS_BY_START: "/user/routes/end-locations/by-start",
-  },
-  BOOKING: {
-    CREATE: "/user/bookings",
-    SEARCH: "/user/bookings/search",
-    MY_BOOKINGS: "/user/bookings/my-bookings",
-    MY_BOOKINGS_PAGED: "/user/bookings/my-bookings/pagination",
-    BY_ID: "/user/bookings",
-    CANCEL: "/user/bookings/cancel",
-    CONFIRM_PAYMENT: "/user/bookings/confirm-payment",
-    CONFIRM_PAYMENT_GUEST: (id: string) => `/user/bookings/confirm/${id}`,
   },
   USER_PAYMENTS: "/user/payments",
 };

@@ -1,542 +1,681 @@
-import { useOwnerProfile } from "@/hooks/owner";
 import {
-  ClockCircleOutlined,
-  EnvironmentOutlined,
-  GlobalOutlined,
-  PictureOutlined,
-  ShopOutlined,
-  TagsOutlined,
-  UploadOutlined,
+  useStalls,
+  useCreateStall,
+  useUpdateStall,
+  useDeleteStall,
+} from "@/hooks/stall/index";
+import {
+  AppstoreAddOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FilterOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import {
   Button,
   Card,
   Col,
-  Divider,
-  Empty,
-  Form,
+  Image,
   Input,
+  Modal,
+  Popconfirm,
   Row,
   Select,
-  Tag,
+  Space,
+  Table,
+  type TableColumnsType,
   Typography,
-  Upload,
   message,
 } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { UploadFile, UploadProps } from "antd";
-import AddStoreModal from "./components/AddStoreModal";
-import StoreFilters from "./components/StoreFilters";
-import StoreList from "./components/StoreList";
-import {
-  categoryOptions,
-  DEFAULT_MAIN_COVER_IMAGE,
-  DEFAULT_NEW_COVER_IMAGE,
-  priceOptions,
-} from "./constants";
-import type { StoreItem } from "./types";
-import { makeId, toBase64 } from "./utils";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DEFAULT_NEW_COVER_IMAGE } from "@/constants/stall.constants";
+import type { StallResponse } from "@/dto/stall.dto";
+import { useToast } from "@/hooks/layout/useToast";
+import { reverseGeocode } from "@/services/location.service";
+import { API_ROUTES } from "@/services/api-route";
+import { formatCoordinates, normalizeCoordinate } from "@/utils/location.utils";
+import { hourValueToString } from "@/utils/stall.utils";
+import StallAddModal, { type StallAddFormValues } from "./add";
+import StallEditModal, { type StallEditSubmitValues } from "./edit/index";
+import StallDetail from "./detail";
 import "./index.css";
 
-const { Title, Text } = Typography;
-
 export default function StallPage() {
-  const { data: profile } = useOwnerProfile();
-  const owner = profile?.owner;
-  const [form] = Form.useForm<StoreItem>();
-  const [addStoreForm] = Form.useForm<StoreItem>();
-  const detailRef = useRef<HTMLDivElement>(null);
-  const [isAddStoreModalOpen, setIsAddStoreModalOpen] = useState(false);
+  const showToast = useToast();
+  const { data: stalls = [], isLoading } = useStalls();
+  const createStallMutation = useCreateStall();
+  const updateStallMutation = useUpdateStall();
+  const deleteStallMutation = useDeleteStall();
+
+  const [isAddStallModalOpen, setIsAddStallModalOpen] = useState(false);
+  const [isEditStallModalOpen, setIsEditStallModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPriceRange, setFilterPriceRange] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(6);
+  const [pageSize, setPageSize] = useState(5);
+  const [editingStall, setEditingStall] = useState<StallResponse | null>(null);
+  const [detailStall, setDetailStall] = useState<StallResponse | null>(null);
+  const [resolvedAddressByKey, setResolvedAddressByKey] = useState<
+    Record<string, string>
+  >({});
+  const pendingAddressLookupRef = useRef<Set<string>>(new Set());
+  const resolvedAddressByKeyRef = useRef<Record<string, string>>({});
 
-  const defaultStore = useMemo<StoreItem[]>(() => {
-    const name = owner?.business_name || "Quán của tôi";
-    const location = owner?.business_address || "Chưa cập nhật địa chỉ";
+  useEffect(() => {
+    resolvedAddressByKeyRef.current = resolvedAddressByKey;
+  }, [resolvedAddressByKey]);
 
-    return [
-      {
-        id: "store-main",
-        name,
-        location,
-        coverImage: DEFAULT_MAIN_COVER_IMAGE,
-        openTime: "08:00",
-        closeTime: "22:00",
-        category: "Món Việt",
-        priceRange: "Tầm trung",
-      },
-    ];
-  }, [owner?.business_address, owner?.business_name]);
+  const getCoordinateKey = (stall: StallResponse): string | null => {
+    if (
+      typeof stall.latitude !== "number" ||
+      !Number.isFinite(stall.latitude) ||
+      typeof stall.longitude !== "number" ||
+      !Number.isFinite(stall.longitude)
+    ) {
+      return null;
+    }
 
-  const [stores, setStores] = useState<StoreItem[]>(() => defaultStore);
-  const [selectedStoreId, setSelectedStoreId] = useState<string>(
-    () => defaultStore[0]?.id ?? "",
+    const lat = normalizeCoordinate(stall.latitude, 6);
+    const lng = normalizeCoordinate(stall.longitude, 6);
+    return `${lat},${lng}`;
+  };
+
+  const getStallAddress = useCallback(
+    (stall: StallResponse) => {
+      const location = (stall as unknown as { location?: string }).location;
+      if (location && location.trim().length > 0) {
+        return location;
+      }
+
+      const key = getCoordinateKey(stall);
+      if (key && resolvedAddressByKey[key]) {
+        return resolvedAddressByKey[key];
+      }
+
+      if (key) {
+        const [lat, lng] = key.split(",").map((value) => Number(value));
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          return formatCoordinates(lat, lng, 6);
+        }
+      }
+
+      return "Chưa cập nhật địa chỉ";
+    },
+    [resolvedAddressByKey],
   );
 
-  const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
+  const getCoverImage = (stall: StallResponse) => {
+    const rawImage = (stall.cover_image || "").trim();
+    if (!rawImage) {
+      return DEFAULT_NEW_COVER_IMAGE;
+    }
+
+    if (
+      rawImage.startsWith("data:image/") ||
+      rawImage.startsWith("http://") ||
+      rawImage.startsWith("https://") ||
+      rawImage.startsWith("blob:")
+    ) {
+      return rawImage;
+    }
+
+    const looksLikeBase64 =
+      /^[A-Za-z0-9+/]+=*$/.test(rawImage) && rawImage.length > 100;
+    if (looksLikeBase64) {
+      return `data:image/jpeg;base64,${rawImage}`;
+    }
+
+    if (rawImage.startsWith("/")) {
+      return `${API_ROUTES.BASE_URL}${rawImage}`;
+    }
+
+    return `${API_ROUTES.BASE_URL}/${rawImage}`;
+  };
+
+  const getPriceRange = (stall: StallResponse) =>
+    stall.price_range || "Chưa cập nhật";
+
+  const getOpeningHours = (stall: StallResponse) => {
+    try {
+      return hourValueToString(stall.opening_hours);
+    } catch {
+      return "--:--";
+    }
+  };
+
+  const getClosingHours = (stall: StallResponse) => {
+    try {
+      return hourValueToString(stall.close_hours);
+    } catch {
+      return "--:--";
+    }
+  };
+
+  const closeAddStallModal = () => {
+    setIsAddStallModalOpen(false);
+  };
+
+  const closeEditStallModal = () => {
+    setIsEditStallModalOpen(false);
+    setEditingStall(null);
+  };
+
+  const closeDetailStallModal = () => {
+    setIsDetailModalOpen(false);
+    setDetailStall(null);
+  };
+
+  const handleKnownUpsertError = (error: unknown) => {
+    if (
+      error instanceof Error &&
+      error.message === "missing-location-coordinates"
+    ) {
+      showToast({
+        type: "warning",
+        title: "Thiếu tọa độ",
+        message: "Thiếu tọa độ vị trí. Vui lòng nhập hoặc chọn trên bản đồ",
+      });
+      return true;
+    }
+
+    if (error instanceof Error && error.message === "invalid-hour-format") {
+      showToast({
+        type: "warning",
+        title: "Sai định dạng giờ",
+        message: "Giờ mở/đóng cửa phải đúng định dạng HH:mm",
+      });
+      return true;
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "invalid-operating-hours-order"
+    ) {
+      showToast({
+        type: "warning",
+        title: "Giờ hoạt động chưa hợp lệ",
+        message: "Giờ đóng cửa phải sau giờ mở cửa và không được bằng nhau",
+      });
+      return true;
+    }
+
+    if (
+      error &&
+      typeof error === "object" &&
+      "errorFields" in error &&
+      Array.isArray(error.errorFields) &&
+      error.errorFields.length > 0
+    ) {
+      showToast({
+        type: "warning",
+        title: "Thiếu thông tin",
+        message: "Vui lòng điền đầy đủ thông tin cần thiết",
+      });
+      return true;
+    }
+
+    return false;
+  };
+
+  const resolveCoordinatesForPayload = (values: {
+    latitude?: number;
+    longitude?: number;
+  }) => {
+    const currentLat = values.latitude;
+    const currentLng = values.longitude;
+
+    if (
+      typeof currentLat === "number" &&
+      Number.isFinite(currentLat) &&
+      typeof currentLng === "number" &&
+      Number.isFinite(currentLng)
+    ) {
+      return {
+        latitude: Number(currentLat.toFixed(6)),
+        longitude: Number(currentLng.toFixed(6)),
+      };
+    }
+
+    throw new Error("missing-location-coordinates");
+  };
+
+  const ensureOperatingHoursOrder = (
+    opening_hours: unknown,
+    close_hours: unknown,
+  ) => {
+    const openingText = hourValueToString(opening_hours);
+    const closingText = hourValueToString(close_hours);
+
+    if (closingText <= openingText) {
+      throw new Error("invalid-operating-hours-order");
+    }
+
+    return { opening_hours: openingText, close_hours: closingText };
+  };
+
+  const filteredStalls = useMemo(() => {
+    return stalls.filter((stall) => {
       const kw = keyword.trim().toLowerCase();
+      const address = getStallAddress(stall).toLowerCase();
+      const category = stall.category || "";
+      const price_range = getPriceRange(stall);
       const matchedKeyword =
-        !kw ||
-        store.name.toLowerCase().includes(kw) ||
-        store.location.toLowerCase().includes(kw);
+        !kw || stall.name.toLowerCase().includes(kw) || address.includes(kw);
       const matchedCategory =
-        filterCategory === "all" || store.category === filterCategory;
+        filterCategory === "all" || category === filterCategory;
       const matchedPrice =
-        filterPriceRange === "all" || store.priceRange === filterPriceRange;
+        filterPriceRange === "all" || price_range === filterPriceRange;
 
       return matchedKeyword && matchedCategory && matchedPrice;
     });
-  }, [filterCategory, filterPriceRange, keyword, stores]);
+  }, [filterCategory, filterPriceRange, getStallAddress, keyword, stalls]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredStores.length / pageSize));
-  const effectiveCurrentPage = Math.min(currentPage, totalPages);
-  const effectiveSelectedStoreId = filteredStores.some(
-    (store) => store.id === selectedStoreId,
-  )
-    ? selectedStoreId
-    : (filteredStores[0]?.id ?? "");
-
-  const paginatedStores = useMemo(() => {
-    const start = (effectiveCurrentPage - 1) * pageSize;
-    return filteredStores.slice(start, start + pageSize);
-  }, [effectiveCurrentPage, filteredStores, pageSize]);
-
-  const selectedStore = stores.find(
-    (store) => store.id === effectiveSelectedStoreId,
-  );
-  const selectedVisibleStore = filteredStores.some(
-    (store) => store.id === effectiveSelectedStoreId,
-  );
-  const watchedLocation = Form.useWatch("location", form);
-  const watchedCoverImage = Form.useWatch("coverImage", form);
-  const uploadFileList: UploadFile[] = watchedCoverImage
-    ? [
-        {
-          uid: effectiveSelectedStoreId || "store-cover",
-          name: "cover-image",
-          status: "done",
-          url: watchedCoverImage,
-        },
-      ]
-    : [];
-  const mapQuery = encodeURIComponent(
-    (watchedLocation as string) || selectedStore?.location || "Việt Nam",
-  );
-  const mapEmbedUrl = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
-  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
+  const visibleStalls = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredStalls.slice(start, end);
+  }, [currentPage, filteredStalls, pageSize]);
 
   useEffect(() => {
-    if (selectedStore) {
-      form.setFieldsValue(selectedStore);
-    }
-  }, [form, selectedStore]);
+    const uniqueCandidatesByKey = new Map<
+      string,
+      { lat: number; lng: number }
+    >();
 
-  const handleSelectStore = (storeId: string) => {
-    setSelectedStoreId(storeId);
-    window.setTimeout(() => {
-      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
-  };
+    visibleStalls.forEach((stall) => {
+      const location = (stall as unknown as { location?: string }).location;
+      const key = getCoordinateKey(stall);
 
-  const handleOpenAddStoreModal = () => {
-    addStoreForm.setFieldsValue({
-      name: `Quán mới ${stores.length + 1}`,
-      location: "Chưa cập nhật địa chỉ",
-      coverImage: DEFAULT_NEW_COVER_IMAGE,
-      openTime: "09:00",
-      closeTime: "21:00",
-      category: "Món Việt",
-      priceRange: "Tầm trung",
+      if (!key || (location && location.trim().length > 0)) {
+        return;
+      }
+
+      if (
+        resolvedAddressByKeyRef.current[key] ||
+        pendingAddressLookupRef.current.has(key)
+      ) {
+        return;
+      }
+
+      uniqueCandidatesByKey.set(key, {
+        lat: stall.latitude as number,
+        lng: stall.longitude as number,
+      });
+      pendingAddressLookupRef.current.add(key);
     });
-    setIsAddStoreModalOpen(true);
-  };
 
-  const handleCreateStore = async () => {
-    try {
-      const values = await addStoreForm.validateFields();
-      const nextStore: StoreItem = {
-        ...values,
-        id: makeId(),
-        coverImage: values.coverImage || DEFAULT_NEW_COVER_IMAGE,
-      };
+    const candidates = Array.from(uniqueCandidatesByKey.entries()).map(
+      ([key, coordinates]) => ({ key, ...coordinates }),
+    );
 
-      setStores((prev) => [nextStore, ...prev]);
-      setSelectedStoreId(nextStore.id);
-      setCurrentPage(1);
-      setIsAddStoreModalOpen(false);
-      addStoreForm.resetFields();
-      message.success("Đã thêm quán mới");
-    } catch {
-      message.warning("Vui lòng điền đầy đủ thông tin quán mới");
-    }
-  };
-
-  const handleSaveStore = (values: StoreItem) => {
-    if (!effectiveSelectedStoreId) {
-      message.warning("Vui lòng chọn quán cần chỉnh sửa");
+    if (!candidates.length) {
       return;
     }
 
-    setStores((prev) =>
-      prev.map((item) =>
-        item.id === effectiveSelectedStoreId
-          ? {
-              ...item,
-              ...values,
-              id: effectiveSelectedStoreId,
-            }
-          : item,
+    let active = true;
+
+    void Promise.all(
+      candidates.map(async ({ key, lat, lng }) => {
+        const address = await reverseGeocode(lat, lng);
+        return { key, address };
+      }),
+    )
+      .then((results) => {
+        if (!active) {
+          return;
+        }
+
+        setResolvedAddressByKey((prev) => {
+          const next = { ...prev };
+          results.forEach(({ key, address }) => {
+            next[key] = address;
+          });
+          return next;
+        });
+      })
+      .finally(() => {
+        candidates.forEach(({ key }) => {
+          pendingAddressLookupRef.current.delete(key);
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [visibleStalls]);
+
+  const categoryFilterOptions = useMemo(() => {
+    const categories = Array.from(
+      new Set(
+        stalls.map((stall) => (stall.category || "").trim()).filter(Boolean),
       ),
     );
-    message.success("Đã lưu thông tin quán");
+
+    return [
+      { label: "Tất cả danh mục", value: "all" },
+      ...categories.map((category) => ({ label: category, value: category })),
+    ];
+  }, [stalls]);
+
+  const priceFilterOptions = useMemo(() => {
+    const prices = Array.from(
+      new Set(
+        stalls.map((stall) => getPriceRange(stall).trim()).filter(Boolean),
+      ),
+    );
+
+    return [
+      { label: "Tất cả mức giá", value: "all" },
+      ...prices.map((price) => ({ label: price, value: price })),
+    ];
+  }, [stalls]);
+
+  const handleOpenAddStallModal = () => {
+    setIsAddStallModalOpen(true);
   };
 
-  const handleUploadChange: UploadProps["onChange"] = async ({ file }) => {
-    if (!file.originFileObj) return;
-
+  const handleCreateStall = async (values: StallAddFormValues) => {
     try {
-      const base64Image = await toBase64(file.originFileObj as File);
-      form.setFieldValue("coverImage", base64Image);
-      message.success("Đã tải ảnh bìa mới");
-    } catch {
-      message.error("Không thể đọc file ảnh, vui lòng thử lại");
+      const coordinates = resolveCoordinatesForPayload(values);
+      const operatingHours = ensureOperatingHoursOrder(
+        values.opening_hours,
+        values.close_hours,
+      );
+      const payloadValues = { ...values };
+      delete payloadValues.location;
+
+      await createStallMutation.mutateAsync({
+        ...payloadValues,
+        ...coordinates,
+        opening_hours: operatingHours.opening_hours,
+        close_hours: operatingHours.close_hours,
+        cover_image: values.cover_image,
+      });
+      setCurrentPage(1);
+      closeAddStallModal();
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Đã thêm quán mới",
+      });
+    } catch (error) {
+      if (!handleKnownUpsertError(error)) {
+        showToast({
+          type: "error",
+          title: "Tạo quán thất bại",
+          message: "Có lỗi xảy ra khi tạo quán. Vui lòng thử lại",
+        });
+      }
     }
   };
 
-  const totalStores = stores.length;
-  const selectedStoreCategory = selectedStore?.category || "Chưa chọn";
-  const selectedOperatingHours = selectedStore
-    ? `${selectedStore.openTime} - ${selectedStore.closeTime}`
-    : "Chưa có dữ liệu";
+  const handleOpenEditStall = (stall: StallResponse) => {
+    setEditingStall(stall);
+    setIsEditStallModalOpen(true);
+  };
+
+  const handleUpdateStall = async (values: StallEditSubmitValues) => {
+    try {
+      if (!editingStall?.id) return;
+      const coordinates = resolveCoordinatesForPayload(values);
+      const operatingHours = ensureOperatingHoursOrder(
+        values.opening_hours,
+        values.close_hours,
+      );
+
+      await updateStallMutation.mutateAsync({
+        ...values,
+        ...coordinates,
+        opening_hours: operatingHours.opening_hours,
+        close_hours: operatingHours.close_hours,
+        cover_image: values.cover_image,
+        price_range: values.price_range,
+        id: editingStall.id,
+      });
+      closeEditStallModal();
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Đã lưu thông tin quán",
+      });
+    } catch (error) {
+      if (!handleKnownUpsertError(error)) {
+        showToast({
+          type: "error",
+          title: "Cập nhật thất bại",
+          message: "Có lỗi xảy ra khi cập nhật quán. Vui lòng thử lại",
+        });
+      }
+    }
+  };
+
+  const handleDeleteStall = async (stallId: string) => {
+    try {
+      await deleteStallMutation.mutateAsync(stallId);
+      message.success("Đã xóa quán");
+    } catch {
+      message.error("Không thể xóa quán. Vui lòng thử lại.");
+    }
+  };
+
+  const handleOpenDetail = (stall: StallResponse) => {
+    setDetailStall(stall);
+    setIsDetailModalOpen(true);
+  };
+
+  const stallColumns: TableColumnsType<StallResponse> = [
+    {
+      title: "Thumbnail",
+      dataIndex: "cover_image",
+      key: "cover_image",
+      width: 90,
+      render: (_, record) => (
+        <Image
+          src={getCoverImage(record)}
+          fallback={DEFAULT_NEW_COVER_IMAGE}
+          alt={record.name}
+          className="stall-table-thumbnail"
+          preview={false}
+        />
+      ),
+    },
+    {
+      title: "Tên quán",
+      dataIndex: "name",
+      key: "name",
+      width: 180,
+      render: (name: string) => (
+        <Space direction="vertical" size={2}>
+          <Typography.Text strong>{name}</Typography.Text>
+        </Space>
+      ),
+    },
+    {
+      title: "Danh mục",
+      dataIndex: "category",
+      key: "category",
+      width: 120,
+      render: (value: string) => <Typography.Text>{value}</Typography.Text>,
+    },
+    {
+      title: "Mức giá",
+      dataIndex: "price_range",
+      key: "price_range",
+      width: 120,
+      render: (_, record) => (
+        <Typography.Text>{getPriceRange(record)}</Typography.Text>
+      ),
+    },
+    {
+      title: "Giờ hoạt động",
+      key: "operatingHours",
+      width: 150,
+      render: (_, record) => (
+        <Typography.Text>
+          {getOpeningHours(record)} - {getClosingHours(record)}
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "Thao tác",
+      key: "actions",
+      width: 300,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            onClick={() => handleOpenDetail(record)}
+          >
+            Xem chi tiết
+          </Button>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => handleOpenEditStall(record)}
+          >
+            Sửa
+          </Button>
+          <Popconfirm
+            title="Xóa quán"
+            description="Bạn có chắc chắn muốn xóa quán này?"
+            okText="Xóa"
+            cancelText="Hủy"
+            onConfirm={() => handleDeleteStall(record.id)}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              Xóa
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <div className="owner-store-page">
-      <Card className="owner-store-hero-card">
-        <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} lg={14}>
-            <div className="owner-store-hero-copy">
-              <Text className="owner-store-eyebrow">Store Management</Text>
-              <Title level={2} className="owner-store-hero-title">
-                Quản lý quán ăn theo trải nghiệm trực quan hơn
-              </Title>
-              <Text className="owner-store-hero-subtitle">
-                Lọc nhanh, duyệt danh sách theo phân trang và nhấn vào từng quán
-                để mở form chi tiết ngay lập tức như các dashboard quản trị thực
-                tế.
-              </Text>
-            </div>
+    <Space direction="vertical" size="middle" className="stall-page-wrap">
+      <Card
+        title="Quản lý quán ăn"
+        extra={
+          <Button
+            type="primary"
+            icon={<AppstoreAddOutlined />}
+            onClick={handleOpenAddStallModal}
+          >
+            Thêm quán mới
+          </Button>
+        }
+      />
+
+      <Card>
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} md={10}>
+            <Input
+              size="large"
+              value={keyword}
+              onChange={(e) => {
+                setKeyword(e.target.value);
+                setCurrentPage(1);
+              }}
+              prefix={<SearchOutlined />}
+              placeholder="Tìm theo tên quán hoặc tọa độ"
+            />
           </Col>
-          <Col xs={24} lg={10}>
-            <div className="owner-store-highlight-grid">
-              <div className="owner-store-highlight-card">
-                <Text className="owner-store-highlight-label">
-                  Tổng số quán
-                </Text>
-                <Title level={3}>{totalStores}</Title>
-              </div>
-              <div className="owner-store-highlight-card">
-                <Text className="owner-store-highlight-label">
-                  Đang hiển thị
-                </Text>
-                <Title level={3}>{filteredStores.length}</Title>
-              </div>
-              <div className="owner-store-highlight-card">
-                <Text className="owner-store-highlight-label">
-                  Danh mục hiện tại
-                </Text>
-                <Title level={4}>{selectedStoreCategory}</Title>
-              </div>
-              <div className="owner-store-highlight-card">
-                <Text className="owner-store-highlight-label">
-                  Giờ hoạt động
-                </Text>
-                <Title level={4}>{selectedOperatingHours}</Title>
-              </div>
-            </div>
+          <Col xs={24} sm={12} md={6}>
+            <Select
+              size="large"
+              value={filterCategory}
+              options={categoryFilterOptions}
+              onChange={(value) => {
+                setFilterCategory(value);
+                setCurrentPage(1);
+              }}
+              suffixIcon={<FilterOutlined />}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Select
+              size="large"
+              value={filterPriceRange}
+              options={priceFilterOptions}
+              onChange={(value) => {
+                setFilterPriceRange(value);
+                setCurrentPage(1);
+              }}
+              suffixIcon={<FilterOutlined />}
+            />
+          </Col>
+          <Col xs={24} md={2}>
+            <Button
+              block
+              size="large"
+              onClick={() => {
+                setKeyword("");
+                setFilterCategory("all");
+                setFilterPriceRange("all");
+                setCurrentPage(1);
+              }}
+            >
+              Reset
+            </Button>
           </Col>
         </Row>
       </Card>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24}>
-          <StoreFilters
-            keyword={keyword}
-            filterCategory={filterCategory}
-            filterPriceRange={filterPriceRange}
-            onKeywordChange={(value) => {
-              setKeyword(value);
-              setCurrentPage(1);
-            }}
-            onCategoryChange={(value) => {
-              setFilterCategory(value);
-              setCurrentPage(1);
-            }}
-            onPriceRangeChange={(value) => {
-              setFilterPriceRange(value);
-              setCurrentPage(1);
-            }}
-            onReset={() => {
-              setKeyword("");
-              setFilterCategory("all");
-              setFilterPriceRange("all");
-              setCurrentPage(1);
-            }}
-          />
-        </Col>
-
-        <Col xs={24} xl={10}>
-          <StoreList
-            filteredStores={filteredStores}
-            paginatedStores={paginatedStores}
-            effectiveSelectedStoreId={effectiveSelectedStoreId}
-            effectiveCurrentPage={effectiveCurrentPage}
-            pageSize={pageSize}
-            onSelectStore={handleSelectStore}
-            onOpenAddModal={handleOpenAddStoreModal}
-            onPaginationChange={(page, size) => {
+      <Card>
+        <Table
+          className="stall-list-table"
+          rowKey="id"
+          columns={stallColumns}
+          dataSource={filteredStalls}
+          size="middle"
+          scroll={{ x: 980 }}
+          loading={isLoading}
+          pagination={{
+            current: currentPage,
+            pageSize,
+            total: filteredStalls.length,
+            showSizeChanger: true,
+            pageSizeOptions: ["5", "10", "50", "100"],
+            onChange: (page, size) => {
               setCurrentPage(page);
               setPageSize(size);
-            }}
-          />
-        </Col>
-
-        <Col xs={24} xl={14}>
-          <div ref={detailRef}>
-            <Card className="owner-store-detail-card">
-              <div className="owner-store-detail-head">
-                <div>
-                  <Text className="owner-store-detail-caption">
-                    Store Detail Form
-                  </Text>
-                  <Title level={4} className="owner-store-detail-title">
-                    Thông tin chi tiết quán
-                  </Title>
-                </div>
-                {selectedStore ? (
-                  <Tag color="orange">Đang chỉnh sửa: {selectedStore.name}</Tag>
-                ) : null}
-              </div>
-
-              {selectedStore && selectedVisibleStore ? (
-                <Form form={form} layout="vertical" onFinish={handleSaveStore}>
-                  <div className="owner-store-form-hero">
-                    <img
-                      src={watchedCoverImage || selectedStore.coverImage}
-                      alt={selectedStore.name}
-                      className="owner-store-form-hero-image"
-                    />
-                    <div className="owner-store-form-hero-content">
-                      <Title level={4}>{selectedStore.name}</Title>
-                      <Text type="secondary">{selectedStore.location}</Text>
-                      <div className="owner-store-form-hero-tags">
-                        <Tag color="gold">{selectedStore.priceRange}</Tag>
-                        <Tag color="blue">{selectedStore.category}</Tag>
-                        <Tag>
-                          {selectedStore.openTime} - {selectedStore.closeTime}
-                        </Tag>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="owner-store-section-title">
-                    <ShopOutlined /> Thông tin cơ bản
-                  </div>
-                  <Form.Item
-                    name="name"
-                    label="Tên quán"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập tên quán" },
-                    ]}
-                  >
-                    <Input size="large" placeholder="Ví dụ: Quán Ăn Gia Đình" />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="location"
-                    label="Vị trí"
-                    rules={[
-                      { required: true, message: "Vui lòng nhập vị trí" },
-                    ]}
-                  >
-                    <Input
-                      size="large"
-                      prefix={<EnvironmentOutlined />}
-                      placeholder="Ví dụ: 12 Nguyễn Huệ, Quận 1"
-                    />
-                  </Form.Item>
-
-                  <div className="owner-store-map-tools">
-                    <Text type="secondary">
-                      Chọn vị trí trên Google Maps rồi copy địa chỉ vào ô Vị trí
-                      để lưu chính xác.
-                    </Text>
-                    <Button
-                      icon={<GlobalOutlined />}
-                      onClick={() =>
-                        window.open(
-                          mapSearchUrl,
-                          "_blank",
-                          "noopener,noreferrer",
-                        )
-                      }
-                    >
-                      Chọn vị trí với Google Maps
-                    </Button>
-                  </div>
-
-                  <div className="owner-store-map-preview">
-                    <iframe
-                      title="Bản đồ vị trí quán"
-                      src={mapEmbedUrl}
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
-
-                  <Form.Item
-                    name="coverImage"
-                    label="Ảnh bìa"
-                    rules={[
-                      {
-                        required: true,
-                        message: "Vui lòng tải ảnh hoặc nhập URL",
-                      },
-                    ]}
-                  >
-                    <Upload
-                      className="owner-store-upload"
-                      listType="picture-card"
-                      maxCount={1}
-                      accept="image/*"
-                      beforeUpload={() => false}
-                      fileList={uploadFileList}
-                      onChange={handleUploadChange}
-                      onRemove={() => {
-                        form.setFieldValue("coverImage", "");
-                        return true;
-                      }}
-                    >
-                      {!uploadFileList.length && (
-                        <div>
-                          <UploadOutlined />
-                          <div className="owner-store-upload-text">Tải ảnh</div>
-                        </div>
-                      )}
-                    </Upload>
-                  </Form.Item>
-
-                  <Form.Item label="Hoặc dán URL ảnh (tuỳ chọn)">
-                    <Input
-                      size="large"
-                      prefix={<PictureOutlined />}
-                      placeholder="https://..."
-                      value={watchedCoverImage}
-                      onChange={(e) =>
-                        form.setFieldValue("coverImage", e.target.value)
-                      }
-                    />
-                  </Form.Item>
-
-                  <div className="owner-store-cover-preview">
-                    <img
-                      src={watchedCoverImage || selectedStore.coverImage}
-                      alt={selectedStore.name}
-                    />
-                  </div>
-
-                  <Divider />
-
-                  <div className="owner-store-section-title">
-                    <ClockCircleOutlined /> Thời gian mở cửa
-                  </div>
-                  <Row gutter={12}>
-                    <Col xs={24} sm={12}>
-                      <Form.Item
-                        name="openTime"
-                        label="Giờ mở cửa"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Vui lòng nhập giờ mở cửa",
-                          },
-                        ]}
-                      >
-                        <Input size="large" placeholder="08:00" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Form.Item
-                        name="closeTime"
-                        label="Giờ đóng cửa"
-                        rules={[
-                          {
-                            required: true,
-                            message: "Vui lòng nhập giờ đóng cửa",
-                          },
-                        ]}
-                      >
-                        <Input size="large" placeholder="22:00" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Divider />
-
-                  <div className="owner-store-section-title">
-                    <TagsOutlined /> Danh mục và mức giá
-                  </div>
-                  <Row gutter={12}>
-                    <Col xs={24} sm={12}>
-                      <Form.Item
-                        name="category"
-                        label="Danh mục"
-                        rules={[
-                          { required: true, message: "Vui lòng chọn danh mục" },
-                        ]}
-                      >
-                        <Select size="large" options={categoryOptions} />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} sm={12}>
-                      <Form.Item
-                        name="priceRange"
-                        label="Mức giá"
-                        rules={[
-                          { required: true, message: "Vui lòng chọn mức giá" },
-                        ]}
-                      >
-                        <Select size="large" options={priceOptions} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Form.Item className="owner-store-actions">
-                    <Button type="primary" htmlType="submit" size="large">
-                      Lưu thay đổi
-                    </Button>
-                  </Form.Item>
-                </Form>
-              ) : (
-                <Empty description="Hãy chọn quán để quản lý" />
-              )}
-            </Card>
-          </div>
-        </Col>
-      </Row>
-
-      <AddStoreModal
-        open={isAddStoreModalOpen}
-        form={addStoreForm}
-        onCancel={() => {
-          setIsAddStoreModalOpen(false);
-          addStoreForm.resetFields();
-        }}
-        onCreate={handleCreateStore}
+            },
+          }}
+        />
+      </Card>
+      <StallAddModal
+        open={isAddStallModalOpen}
+        onCancel={closeAddStallModal}
+        onSubmit={handleCreateStall}
+        submitting={createStallMutation.isPending}
       />
-    </div>
+      <StallEditModal
+        open={isEditStallModalOpen}
+        stall={editingStall}
+        onCancel={closeEditStallModal}
+        onSubmit={handleUpdateStall}
+        submitting={updateStallMutation.isPending}
+      />
+      <Modal
+        title="Chi tiết quán"
+        open={isDetailModalOpen}
+        onCancel={closeDetailStallModal}
+        footer={null}
+      >
+        {detailStall ? (
+          <StallDetail
+            stall={detailStall}
+            getStallAddress={getStallAddress}
+            getPriceRange={getPriceRange}
+            getOpeningHours={getOpeningHours}
+            getClosingHours={getClosingHours}
+          />
+        ) : null}
+      </Modal>
+    </Space>
   );
 }

@@ -1,24 +1,123 @@
-import { Button, Card, List, Modal, Tag, message, Spin } from "antd";
-import { useState } from "react";
-import QrPaymentModal from "@/components/payment/QrPaymentModal";
-import { useOwnerPackages, usePurchaseOwnerPackage } from "@/hooks/owner";
+import {
+  Button,
+  Card,
+  List,
+  Modal,
+  Tag,
+  message,
+  Spin,
+  Typography,
+} from "antd";
+import { useEffect, useState } from "react";
+import {
+  useCheckVnpayPaymentStatus,
+  useListPackages,
+  useRegisterPackage,
+} from "@/hooks/subscription";
 import type { PackageDto } from "@/dto/subscription.dto";
+import "./PackageSelector.css";
 
-export default function PackageSelector({ open, onClose }: any) {
-  const { data: packages, isLoading } = useOwnerPackages();
-  const purchaseMutation = usePurchaseOwnerPackage();
+const { Text } = Typography;
+
+interface PackageSelectorProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+function formatDate(value?: string) {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date.toLocaleDateString("vi-VN");
+}
+
+export default function PackageSelector({
+  open,
+  onClose,
+}: PackageSelectorProps) {
+  const { data: packages, isLoading } = useListPackages();
+  const registerMutation = useRegisterPackage();
+  const { mutateAsync: checkPaymentStatus } = useCheckVnpayPaymentStatus();
   const [current, setCurrent] = useState<PackageDto | null>(null);
-  const [qrOpen, setQrOpen] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
-  const handleConfirm = async () => {
-    if (!current) return;
+  useEffect(() => {
+    if (!pendingOrderId) return;
+
+    let active = true;
+    let timer: number | undefined;
+
+    const pollStatus = async () => {
+      try {
+        const status = await checkPaymentStatus(pendingOrderId);
+
+        if (!active) return;
+
+        if (status.paid) {
+          message.success(
+            "Thanh toán thành công. Gói của bạn đã được cập nhật.",
+          );
+          setPendingOrderId(null);
+          setCurrent(null);
+          onClose();
+          return;
+        }
+      } catch {
+        if (!active) return;
+      }
+
+      if (active) {
+        timer = window.setTimeout(() => {
+          void pollStatus();
+        }, 5000);
+      }
+    };
+
+    void pollStatus();
+
+    return () => {
+      active = false;
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [checkPaymentStatus, onClose, pendingOrderId]);
+
+  const handleOpenPayment = async (pkg: PackageDto) => {
+    setCurrent(pkg);
+
     try {
-      await purchaseMutation.mutateAsync(current.id);
-      message.success("Đăng ký gói thành công");
-      setQrOpen(false);
-      onClose();
-    } catch (err: any) {
-      message.error(err?.message || "Lỗi đăng ký");
+      const session = await registerMutation.mutateAsync(pkg.id);
+      const paymentUrl = session.payUrl || session.deeplink;
+
+      if (!paymentUrl) {
+        throw new Error("Backend chưa trả về đường dẫn thanh toán VNPay");
+      }
+
+      const opened = window.open(paymentUrl, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        message.warning(
+          "Trình duyệt đang chặn popup. Vui lòng cho phép popup để mở trang thanh toán ở tab mới.",
+        );
+      }
+
+      if (session.orderId) {
+        setPendingOrderId(session.orderId);
+        message.info("Đã mở VNPay. Đang chờ xác nhận thanh toán...");
+      } else {
+        message.warning(
+          "Không nhận được mã giao dịch để theo dõi tự động. Vui lòng kiểm tra lại lịch sử gói sau khi thanh toán.",
+        );
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Không tạo được giao dịch VNPay";
+      message.error(errorMessage);
+      setPendingOrderId(null);
     }
   };
 
@@ -27,55 +126,61 @@ export default function PackageSelector({ open, onClose }: any) {
       open={open}
       onCancel={onClose}
       footer={null}
-      width={640}
+      width={720}
       title="Chọn gói dịch vụ"
+      destroyOnHidden
     >
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: 24 }}>
+        <div className="package-selector-loading">
           <Spin />
         </div>
       ) : (
         <List
           dataSource={(packages as PackageDto[]) || []}
-          renderItem={(p: any) => (
+          renderItem={(pkg) => (
             <List.Item>
-              <Card style={{ width: "100%" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600 }}>
-                      {p.name}{" "}
-                      <Tag color="green">
-                        {p.price === 0
-                          ? "Miễn phí"
-                          : p.price.toLocaleString() + "đ"}
+              <Card className="package-selector-card">
+                <div className="package-selector-row">
+                  <div className="package-selector-content">
+                    <Text strong className="package-selector-name">
+                      {pkg.name}
+                    </Text>
+                    <div className="package-selector-tags">
+                      <Tag color="blue">{pkg.code}</Tag>
+                      <Tag color="geekblue">Tối đa {pkg.max_stalls} quán</Tag>
+                      <Tag color={pkg.is_deleted ? "red" : "green"}>
+                        {pkg.is_deleted ? "Đã ẩn" : "Khả dụng"}
                       </Tag>
                     </div>
-                    <div style={{ color: "#666" }}>{p.description}</div>
-                    {p.features && Array.isArray(p.features) && (
-                      <div style={{ marginTop: 6 }}>
-                        {p.features.map((f: string, idx: number) => (
-                          <Tag key={idx}>{f}</Tag>
-                        ))}
-                      </div>
-                    )}
+                    <Text className="package-selector-description">
+                      {pkg.description ||
+                        "Gói dịch vụ dành cho cửa hàng cần tối ưu vận hành."}
+                    </Text>
+                    <div className="package-selector-meta">
+                      {formatDate(pkg.created_at) ? (
+                        <Text type="secondary">
+                          Tạo ngày: {formatDate(pkg.created_at)}
+                        </Text>
+                      ) : null}
+                      {formatDate(pkg.updated_at) ? (
+                        <Text type="secondary">
+                          Cập nhật: {formatDate(pkg.updated_at)}
+                        </Text>
+                      ) : null}
+                    </div>
                   </div>
-                  <div>
+                  <div className="package-selector-action">
+                    <Text strong className="package-selector-price">
+                      {pkg.price === 0
+                        ? "Miễn phí"
+                        : `${pkg.price.toLocaleString("vi-VN")}đ`}
+                    </Text>
                     <Button
                       type="primary"
                       loading={
-                        (purchaseMutation as any).isPending &&
-                        current?.id === p.id
+                        registerMutation.isPending && current?.id === pkg.id
                       }
-                      onClick={() => {
-                        setCurrent(p);
-                        setQrOpen(true);
-                      }}
+                      onClick={() => void handleOpenPayment(pkg)}
                     >
                       Đăng ký
                     </Button>
@@ -86,14 +191,6 @@ export default function PackageSelector({ open, onClose }: any) {
           )}
         />
       )}
-
-      <QrPaymentModal
-        open={qrOpen}
-        method={"momo"}
-        amount={current?.price || 0}
-        onClose={() => setQrOpen(false)}
-        onConfirmPaid={handleConfirm}
-      />
     </Modal>
   );
 }

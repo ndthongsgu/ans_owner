@@ -10,7 +10,8 @@ import {
 import { Button, Card, Col, Divider, Row, Space, Typography } from "antd";
 import { useState } from "react";
 import PackageSelector from "../../../components/owner/PackageSelector";
-import { useOwnerProfile, useOwnerSubscription } from "@/hooks/owner";
+import { useProfile } from "@/hooks/owner";
+import { useMySubscription } from "@/hooks/subscription";
 import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 import { useNavigate } from "react-router-dom";
 import "./index.css";
@@ -56,8 +57,8 @@ function buildChartPoints(
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { data: profile } = useOwnerProfile();
-  const { data: mySub } = useOwnerSubscription();
+  const { data: profile } = useProfile();
+  const { data: mySub } = useMySubscription();
   const [showPackages, setShowPackages] = useState(false);
 
   const owner = profile?.owner;

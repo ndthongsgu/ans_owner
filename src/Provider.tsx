@@ -3,7 +3,6 @@ import type { NavigateOptions } from "react-router-dom";
 import { useHref, useNavigate } from "react-router-dom";
 import { ToastProvider } from "./components/toast";
 import { LoadingProvider } from "./context/LoadingContext";
-import ToastInjector from "./hooks/notification/ToastInjector";
 
 declare module "@react-types/shared" {
   interface RouterConfig {
@@ -17,7 +16,6 @@ export function Provider({ children }: { children: React.ReactNode }) {
     <HeroUIProvider navigate={navigate} useHref={useHref}>
       <ToastProvider>
         <LoadingProvider>{children}</LoadingProvider>
-        <ToastInjector />
       </ToastProvider>
     </HeroUIProvider>
   );

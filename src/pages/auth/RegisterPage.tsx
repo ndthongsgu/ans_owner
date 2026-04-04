@@ -1,10 +1,9 @@
-import { googleButtonStyle } from "@/components/auth/LoginForm";
 import { useRegister } from "@/hooks/auth/auth";
 import { useToast } from "@/hooks/layout/useToast";
 import { PUBLIC_ROUTES } from "@/routes/routes";
 import { handleGoogleLogin } from "@/services/other";
 import { GoogleOutlined } from "@ant-design/icons";
-import { Alert, Button, Divider, Form, Input, Typography } from "antd";
+import { Button, Divider, Form, Input, Typography } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 
 const { Title } = Typography;
@@ -181,7 +180,7 @@ function RegisterPageForm() {
       <Button
         onClick={handleGoogleLogin}
         size="large"
-        style={googleButtonStyle}
+        // style={googleButtonStyle}
       >
         {/* You will need to import the actual Google SVG/Image path */}
         {/* <img src={Google} alt="Google" style={{ width: "20px", height: "20px", marginRight: "8px" }} /> */}

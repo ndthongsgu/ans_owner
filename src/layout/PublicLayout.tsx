@@ -1,4 +1,3 @@
-import ChatComponent from "@/components/chat";
 import AppFooter from "./AppFooter";
 import AppHeader from "./AppHeader";
 
@@ -22,7 +21,6 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
       >
         <div style={{ position: "relative" }}>{children}</div>
       </div>
-      <ChatComponent />
 
       <AppFooter />
     </div>

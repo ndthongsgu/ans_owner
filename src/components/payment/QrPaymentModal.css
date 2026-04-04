@@ -1,0 +1,44 @@
+.payment-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.payment-modal-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.payment-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.payment-modal-status {
+  margin-bottom: 8px;
+}
+
+.payment-modal-amount {
+  margin-top: 0 !important;
+}
+
+.payment-modal-description {
+  margin-bottom: 12px;
+}
+
+.payment-modal-order {
+  margin-bottom: 8px;
+}
+
+.payment-modal-qr {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.payment-modal-divider {
+  margin: 16px 0 !important;
+}
