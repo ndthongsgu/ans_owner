@@ -221,6 +221,54 @@ export default function StallContentDetail({
         </Space>
       </Card>
 
+      <Card size="small" title="Thông tin cơ bản">
+        <Descriptions column={1} size="small">
+          <Descriptions.Item label="Tên quán">
+            <Text>{item.stall_name || "(Không có tên quán)"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Ngôn ngữ">
+            <Text>{item.language_code?.toUpperCase() || "VI"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Tiêu đề">
+            <Text>{item.title || "(Không có tiêu đề)"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Mô tả">
+            <Text>{item.description || "(Không có mô tả)"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Audio URL">
+            <Text>
+              {item.audio_url ? (
+                <a href={item.audio_url} target="_blank" rel="noopener noreferrer">
+                  {item.audio_url}
+                </a>
+              ) : (
+                "(Không có audio)"
+              )}
+            </Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Thời lượng">
+            <Text>{item.audio_duration ? `${item.audio_duration}s` : "(Không có)"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Kích thước file">
+            <Text>{item.audio_file_size ? `${(item.audio_file_size / 1024).toFixed(1)} KB` : "(Không có)"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Version">
+            <Text>{item.version || "(Không có)"}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Trạng thái">
+            <Text type={item.is_deleted ? "danger" : "success"}>
+              {item.is_deleted ? "Đã xóa" : "Hoạt động"}
+            </Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Thời gian tạo">
+            <Text>{new Date(item.created_at * 1000).toLocaleString("vi-VN")}</Text>
+          </Descriptions.Item>
+          <Descriptions.Item label="Cập nhật lần cuối">
+            <Text>{item.updated_at ? new Date(item.updated_at * 1000).toLocaleString("vi-VN") : "(Chưa cập nhật)"}</Text>
+          </Descriptions.Item>
+        </Descriptions>
+      </Card>
+
       <Card size="small" title="Nội dung thuyết minh">
         <Descriptions column={1} size="small">
           <Descriptions.Item label="Script">

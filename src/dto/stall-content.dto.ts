@@ -16,10 +16,13 @@ export type StallContentResponse = {
   stall_id: string;
   stall_name?: string | null;
   language_code: LanguageCode;
+  title?: string | null;
+  description?: string | null;
   audio_url: string;
   audio_duration?: number | null;
   audio_file_size?: number | null;
   tts_script?: string | null;
+  version?: number | null;
   is_deleted: boolean;
   created_at: number;
   updated_at?: number | null;

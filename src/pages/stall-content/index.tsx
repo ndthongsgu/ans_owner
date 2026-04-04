@@ -18,6 +18,7 @@ import {
   Space,
   Table,
   Typography,
+  Tag,
   type TableColumnsType,
 } from "antd";
 import { useMemo, useState } from "react";
@@ -51,7 +52,6 @@ export default function StallContentPage() {
   const [editForm] = Form.useForm<StallContentEditFormValues>();
 
   const { data: stalls = [] } = useStalls();
-  const [selectedStallId] = useState<string | undefined>(undefined);
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -60,44 +60,28 @@ export default function StallContentPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const [editingItem, setEditingItem] = useState<StallContentResponse | null>(
-    null,
-  );
-  const [viewingItem, setViewingItem] = useState<StallContentResponse | null>(
-    null,
-  );
-  const [selectedPlaybackLanguage, setSelectedPlaybackLanguage] = useState<
-    string | undefined
-  >(undefined);
+  const [editingItem, setEditingItem] = useState<StallContentResponse | null>(null);
+  const [viewingItem, setViewingItem] = useState<StallContentResponse | null>(null);
+  const [selectedPlaybackLanguage, setSelectedPlaybackLanguage] = useState<string | undefined>(undefined);
 
-  const effectiveStallId = selectedStallId || stalls[0]?.id;
+  const { data: stallContents = [], isLoading: isStallContentsLoading } = useStallContents();
 
-  const { data: stallContents = [], isLoading: isStallContentsLoading } =
-    useStallContents();
+  // 1. Tối ưu hóa việc lấy Stall Name: API đã trả về stall_name, chỉ fallback nếu thiếu
+  const enrichedStallContents = useMemo(() => {
+    return stallContents.map((content) => ({
+      ...content,
+      display_stall_name: content.stall_name || stalls.find(s => s.id === content.stall_id)?.name || content.stall_id,
+    }));
+  }, [stallContents, stalls]);
 
   const createMutation = useCreateStallContent();
   const updateMutation = useUpdateStallContent();
   const deleteMutation = useDeleteStallContent();
 
   const stallOptions = useMemo(
-    () =>
-      stalls.map((stall) => ({
-        label: stall.name || stall.id,
-        value: stall.id,
-      })),
-    [stalls],
+    () => stalls.map((stall) => ({ label: stall.name || stall.id, value: stall.id })),
+    [stalls]
   );
-
-  const getStallNameById = (stallId?: string | null) => {
-    if (!stallId) {
-      return "";
-    }
-
-    return stalls.find((stall) => stall.id === stallId)?.name || stallId;
-  };
-
-  const availableStalls = stalls;
-  const defaultStallId = stalls[0]?.id || "";
 
   const languageOptions = useMemo(() => {
     const languages = ["vi", "en", "zh", "ja"];
@@ -107,289 +91,141 @@ export default function StallContentPage() {
     }));
   }, []);
 
+  // Handlers
   const openAddModal = () => {
-    if (!availableStalls.length) {
-      showToast({
-        type: "warning",
-        title: "Không có quán khả dụng",
-        message: "Không còn quán trong danh sách để thêm nội dung",
-      });
+    if (!stalls.length) {
+      showToast({ type: "warning", title: "Cảnh báo", message: "Không tìm thấy danh sách quán" });
       return;
     }
-
-    addForm.setFieldsValue({
-      stall_id: defaultStallId,
-      tts_script: "",
-    });
+    addForm.setFieldsValue({ stall_id: stalls[0]?.id, tts_script: "" });
     setIsAddModalOpen(true);
   };
 
   const handleCreate = async () => {
-    if (!effectiveStallId) return;
-
     try {
       const values = await addForm.validateFields();
-      const payload: StallContentCreateRequest = {
-        stall_id: values.stall_id,
-        language_code: "vi",
-        tts_script: values.tts_script.trim(),
-      };
-
       await createMutation.mutateAsync({
         stallId: values.stall_id,
-        payload,
+        payload: { ...values, language_code: "vi" }
       });
-
       setIsAddModalOpen(false);
       addForm.resetFields();
-      showToast({
-        type: "success",
-        title: "Thành công",
-        message: "Đã thêm nội dung thuyết minh",
-      });
-    } catch {
-      showToast({
-        type: "warning",
-        title: "Thiếu thông tin",
-        message: "Vui lòng nhập đầy đủ thông tin trước khi lưu",
-      });
+      showToast({ type: "success", title: "Thành công", message: "Đã thêm nội dung" });
+    } catch (err) {
+      console.error(err);
     }
-  };
-
-  const openEditModal = (data: StallContentResponse) => {
-    editForm.setFieldsValue({
-      id: data?.id,
-      stall_id: data.stall_id,
-      stall_name: data.stall_name || getStallNameById(data.stall_id),
-      language_code: (data.language_code || "vi") as LanguageCode,
-      tts_script: data.tts_script || "",
-    });
-
-    setEditingItem(data);
-    setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editingItem) {
-      return;
-    }
-
+    if (!editingItem) return;
     try {
       const values = await editForm.validateFields();
-
-      const contentId = values.id || editingItem.id;
-      const stallId =
-        values.stall_id || editingItem.stall_id || effectiveStallId;
-
-      if (!stallId) {
-        showToast({
-          type: "error",
-          title: "Thiếu stallId",
-          message:
-            "Backend chưa trả về stallId hợp lệ cho bản ghi nên không thể cập nhật",
-        });
-        return;
-      }
-
-      if (!contentId) {
-        showToast({
-          type: "error",
-          title: "Thiếu contentId",
-          message:
-            "Backend chưa trả về contentId/id hợp lệ cho bản ghi nên không thể cập nhật",
-        });
-        return;
-      }
-
-      const payload: StallContentUpdateRequest = {
-        language_code:
-          values.language_code || (editingItem.language_code as LanguageCode),
-        tts_script: values.tts_script ? values.tts_script.trim() : undefined,
-      };
-
       showLoading();
-      try {
-        await updateMutation.mutateAsync({
-          stallId,
-          contentId,
-          payload,
-        });
-      } finally {
-        hideLoading();
-      }
-
+      await updateMutation.mutateAsync({
+        stallId: editingItem.stall_id,
+        contentId: editingItem.id,
+        payload: {
+          language_code: values.language_code,
+          tts_script: values.tts_script?.trim(),
+        },
+      });
       setIsEditModalOpen(false);
-      setEditingItem(null);
-      editForm.resetFields();
-      showToast({
-        type: "success",
-        title: "Thành công",
-        message: "Đã cập nhật nội dung thuyết minh",
-      });
-    } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === "object" &&
-        "errorFields" in error &&
-        Array.isArray((error as { errorFields?: unknown[] }).errorFields)
-      ) {
-        showToast({
-          type: "warning",
-          title: "Thiếu thông tin",
-          message: "Vui lòng nhập đầy đủ nội dung thuyết minh trước khi lưu",
-        });
-        return;
-      }
-
-      const apiMessage =
-        error &&
-        typeof error === "object" &&
-        "response" in error &&
-        (
-          error as {
-            response?: { data?: { message?: string; error?: string } };
-          }
-        ).response?.data
-          ? (
-              error as {
-                response?: { data?: { message?: string; error?: string } };
-              }
-            ).response?.data?.message ||
-            (
-              error as {
-                response?: { data?: { message?: string; error?: string } };
-              }
-            ).response?.data?.error
-          : undefined;
-
-      showToast({
-        type: "error",
-        title: "Không thể lưu",
-        message:
-          apiMessage ||
-          "Lưu nội dung thất bại. Vui lòng thử lại hoặc kiểm tra dữ liệu gửi lên",
-      });
+      showToast({ type: "success", title: "Thành công", message: "Đã cập nhật" });
+    } catch (err) {
+      showToast({ type: "error", title: "Lỗi", message: "Không thể lưu thay đổi" });
+    } finally {
+      hideLoading();
     }
   };
 
   const handleDelete = async (item: StallContentResponse) => {
-    if (!effectiveStallId) return;
-
     try {
-      const contentId = item.id;
-
-      if (!contentId) {
-        showToast({
-          type: "error",
-          title: "Thiếu contentId",
-          message:
-            "Backend chưa trả về contentId/id hợp lệ cho bản ghi nên không thể xóa",
-        });
-        return;
-      }
-
-      await deleteMutation.mutateAsync({
-        stallId: effectiveStallId,
-        contentId,
-      });
-      showToast({
-        type: "success",
-        title: "Đã xóa",
-        message: "Nội dung thuyết minh đã được xóa",
-      });
+      await deleteMutation.mutateAsync({ stallId: item.stall_id, contentId: item.id });
+      showToast({ type: "success", title: "Đã xóa", message: "Nội dung đã được loại bỏ" });
     } catch {
-      showToast({
-        type: "error",
-        title: "Xóa thất bại",
-        message: "Không thể xóa nội dung, vui lòng thử lại",
-      });
+      showToast({ type: "error", title: "Thất bại", message: "Không thể xóa" });
     }
-  };
-
-  const openDetailModal = (item: StallContentResponse) => {
-    const preferredLanguage = item.language_code?.trim() || undefined;
-
-    setSelectedPlaybackLanguage(preferredLanguage);
-    setViewingItem(item);
-    setIsDetailModalOpen(true);
   };
 
   const filteredStallContents = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    if (!kw) return stallContents;
+    if (!kw) return enrichedStallContents;
+    return enrichedStallContents.filter((item) =>
+      `${item.display_stall_name} ${item.title} ${item.tts_script}`.toLowerCase().includes(kw)
+    );
+  }, [keyword, enrichedStallContents]);
 
-    return stallContents.filter((item) => {
-      const searchable =
-        `${item.stall_name || ""} ${item.language_code || ""} ${item.tts_script || ""}`.toLowerCase();
-      return searchable.includes(kw);
-    });
-  }, [keyword, stallContents]);
-
-  const columns: TableColumnsType<StallContentResponse> = [
+  const columns: TableColumnsType<StallContentResponse & { display_stall_name: string }> = [
     {
       title: "Tên quán",
-      dataIndex: "stall_name",
-      key: "stall_name",
-      width: 120,
-      render: (value: string) => (
-        <Typography.Text strong>{value}</Typography.Text>
-      ),
+      dataIndex: "display_stall_name",
+      key: "display_stall_name",
+      fixed: 'left',
+      width: 150,
+      render: (text) => <Typography.Text strong>{text}</Typography.Text>,
     },
     {
-      title: "Nội dung",
-      dataIndex: "tts_script",
-      key: "tts_script",
-      width: 380,
-      render: (value: string) => (
-        <Typography.Text strong>{value}</Typography.Text>
-      ),
+      title: "Ngôn ngữ",
+      dataIndex: "language_code",
+      key: "language_code",
+      width: 100,
+      render: (code) => <Tag color="blue">{LANGUAGE_LABELS[code] || code.toUpperCase()}</Tag>,
     },
     {
-      title: "Thời gian tạo",
+      title: "Tiêu đề",
+      dataIndex: "title",
+      key: "title",
+      width: 200,
+      ellipsis: true,
+    },
+    {
+      title: "Audio",
+      dataIndex: "audio_url",
+      key: "audio_url",
+      width: 100,
+      render: (url) => url ? <a href={url} target="_blank">Nghe</a> : "-",
+    },
+    {
+      title: "Thời lượng",
+      dataIndex: "audio_duration",
+      key: "audio_duration",
+      width: 100,
+      render: (d) => d ? `${d}s` : "-",
+    },
+    {
+      title: "Phiên bản",
+      dataIndex: "version",
+      key: "version",
+      width: 90,
+      render: (v) => <Tag>v{v}</Tag>,
+    },
+    {
+      title: "Ngày tạo",
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
-      render: (value: number | undefined) =>
-        value ? dayjs(value).format("HH:mm:ss DD/MM/YYYY") : "-",
-    },
-    {
-      title: "Cập nhật lần cuối",
-      dataIndex: "updated_at",
-      key: "updated_at",
-      width: 160,
-      render: (value: number | undefined) =>
-        value ? dayjs(value).format("HH:mm:ss DD/MM/YYYY") : "-",
+      // SỬA LỖI: API trả về giây (Unix), dayjs mặc định là miligiây
+      render: (val) => val ? dayjs.unix(val).format("HH:mm DD/MM/YYYY") : "-",
     },
     {
       title: "Thao tác",
       key: "actions",
-      width: 260,
+      fixed: 'right',
+      width: 220,
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => openDetailModal(record)}
-          >
-            Xem
-          </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => openEditModal(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Xóa nội dung"
-            description="Bạn có chắc chắn muốn xóa nội dung này?"
-            okText="Xóa"
-            cancelText="Hủy"
-            onConfirm={() => handleDelete(record)}
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
+        <Space>
+          <Button type="link" icon={<EyeOutlined />} onClick={() => {
+            setViewingItem(record);
+            setSelectedPlaybackLanguage(record.language_code);
+            setIsDetailModalOpen(true);
+          }}>Xem</Button>
+          <Button type="link" icon={<EditOutlined />} onClick={() => {
+            setEditingItem(record);
+            editForm.setFieldsValue({ ...record });
+            setIsEditModalOpen(true);
+          }}>Sửa</Button>
+          <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record)}>
+            <Button type="link" danger icon={<DeleteOutlined />}>Xóa</Button>
           </Popconfirm>
         </Space>
       ),
@@ -397,86 +233,47 @@ export default function StallContentPage() {
   ];
 
   return (
-    <Space
-      direction="vertical"
-      size="middle"
-      className="stall-content-page-wrap"
-    >
-      <Card
-        title="Quản lý nội dung thuyết minh"
-        extra={
-          <Space>
-            <Button
-              type="primary"
-              icon={<AppstoreAddOutlined />}
-              onClick={openAddModal}
-            >
-              Thêm nội dung
-            </Button>
-          </Space>
-        }
-      />
+    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Card title="Quản lý nội dung thuyết minh" extra={
+        <Button type="primary" icon={<AppstoreAddOutlined />} onClick={openAddModal}>Thêm mới</Button>
+      } />
 
       <Card>
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} md={12}>
+        <Row gutter={16}>
+          <Col flex="auto">
             <Input
-              size="large"
-              value={keyword}
-              onChange={(e) => {
-                setKeyword(e.target.value);
-                setCurrentPage(1);
-              }}
               prefix={<SearchOutlined />}
-              placeholder="Tìm theo nội dung thuyết minh"
+              placeholder="Tìm kiếm quán hoặc nội dung..."
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              allowClear
             />
           </Col>
-          <Col xs={24} md={6}>
-            <Button
-              block
-              size="large"
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setKeyword("");
-                setCurrentPage(1);
-              }}
-            >
-              Reset
-            </Button>
+          <Col>
+            <Button icon={<ReloadOutlined />} onClick={() => setKeyword("")}>Làm mới</Button>
           </Col>
         </Row>
       </Card>
 
-      <Card>
-        <Table
-          className="stall-content-table"
-          rowKey="id"
-          loading={isStallContentsLoading}
-          columns={columns}
-          dataSource={filteredStallContents}
-          scroll={{ x: 1080 }}
-          pagination={{
-            current: currentPage,
-            pageSize,
-            total: filteredStallContents.length,
-            showSizeChanger: true,
-            pageSizeOptions: ["5", "10", "20"],
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            },
-          }}
-        />
-      </Card>
+      <Table
+        rowKey="id"
+        loading={isStallContentsLoading}
+        columns={columns}
+        dataSource={filteredStallContents}
+        scroll={{ x: 1200 }}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total: filteredStallContents.length,
+          onChange: (p, s) => { setCurrentPage(p); setPageSize(s); }
+        }}
+      />
 
+      {/* Modals */}
       <StallContentAddModal
         open={isAddModalOpen}
         form={addForm}
-        onCancel={() => {
-          setIsAddModalOpen(false);
-          addForm.resetFields();
-          editForm.resetFields();
-        }}
+        onCancel={() => setIsAddModalOpen(false)}
         onCreate={handleCreate}
         stallOptions={stallOptions}
       />
@@ -484,34 +281,26 @@ export default function StallContentPage() {
       <StallContentEditModal
         open={isEditModalOpen}
         form={editForm}
-        stallId={editingItem?.stall_id || effectiveStallId}
-        onCancel={() => {
-          setIsEditModalOpen(false);
-          setEditingItem(null);
-          editForm.resetFields();
-        }}
+        stallId={editingItem?.stall_id || ""}
+        onCancel={() => setIsEditModalOpen(false)}
         onSave={handleSaveEdit}
       />
 
       <Modal
-        title="Chi tiết nội dung thuyết minh"
+        title="Chi tiết thuyết minh"
         open={isDetailModalOpen}
-        onCancel={() => {
-          setIsDetailModalOpen(false);
-          setViewingItem(null);
-          setSelectedPlaybackLanguage(undefined);
-        }}
+        onCancel={() => setIsDetailModalOpen(false)}
         footer={null}
-        width={900}
+        width={800}
       >
-        {viewingItem ? (
+        {viewingItem && (
           <StallContentDetail
             item={viewingItem}
             selectedLanguage={selectedPlaybackLanguage}
             languageOptions={languageOptions}
             onChangeLanguage={setSelectedPlaybackLanguage}
           />
-        ) : null}
+        )}
       </Modal>
     </Space>
   );

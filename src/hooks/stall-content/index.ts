@@ -46,8 +46,16 @@ const normalizeStallContent = (
     stall_id: getFirstString(source, ["stall_id", "stallId"]),
     stall_name: getFirstString(source, ["stall_name", "stallName"]),
     language_code: getFirstString(source, ["language_code", "languageCode"]),
+    title: getFirstString(source, ["title"]),
+    description: getFirstString(source, ["description"]),
     audio_url: getFirstString(source, ["audio_url", "audioUrl", "url"]),
     tts_script: getFirstString(source, ["tts_script", "ttsScript"]),
+    version: source.version as number | undefined,
+    is_deleted: Boolean(source.is_deleted ?? source.isDeleted),
+    created_at: source.created_at as number,
+    updated_at: source.updated_at as number | undefined,
+    audio_duration: source.audio_duration as number | undefined,
+    audio_file_size: source.audio_file_size as number | undefined,
   } as StallContentResponse;
 };
 
