@@ -1,13 +1,186 @@
 .stall-page-wrap {
   width: 100%;
+  padding: 4px 0 10px;
+  --stall-font: "Be Vietnam Pro", "Manrope", "Segoe UI", sans-serif;
+  --stall-ink: #0f172a;
+  --stall-muted: #5b6473;
+  --stall-border: #dbe3ef;
+  --stall-surface: #ffffff;
+  font-family: var(--stall-font);
 }
 
 .stall-page-wrap > .ant-space-item {
   width: 100%;
 }
 
+.stall-hero {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 28px;
+  background:
+    radial-gradient(
+      circle at 15% 20%,
+      rgba(255, 255, 255, 0.25),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      rgba(255, 255, 255, 0.18),
+      transparent 36%
+    ),
+    linear-gradient(120deg, #0f766e 0%, #1d4ed8 55%, #0ea5e9 100%);
+  box-shadow: 0 24px 48px rgba(17, 24, 39, 0.24);
+  isolation: isolate;
+}
+
+.stall-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto -80px -100px auto;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  filter: blur(2px);
+}
+
+.stall-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+}
+
+.stall-hero-kicker {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stall-hero-title.ant-typography {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  color: #ffffff;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1.2;
+  font-family: var(--stall-font);
+}
+
+.stall-hero-description.ant-typography {
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 640px;
+  margin-bottom: 22px;
+  font-size: 15px;
+}
+
+.stall-hero-badges {
+  margin-bottom: 14px;
+}
+
+.stall-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(2px);
+}
+
+.stall-hero-limit {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+.stall-kpi-row {
+  margin-top: 2px;
+}
+
+.stall-kpi-card {
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, #f8fbff 0%, #ffffff 100%),
+    linear-gradient(120deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.08));
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.25s ease;
+}
+
+.stall-kpi-card .ant-card-body {
+  padding: 16px;
+}
+
+.stall-kpi-value.ant-typography {
+  margin: 6px 0 0;
+  color: #0f172a;
+}
+
+.stall-kpi-subtext {
+  font-size: 12px;
+  color: var(--stall-muted);
+}
+
+.stall-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(30, 64, 175, 0.14);
+}
+
+.stall-panel-card {
+  border-radius: 16px;
+  border: 1px solid var(--stall-border);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, #ffffff 0%, #fdfefe 100%);
+}
+
+.stall-panel-card .ant-card-body {
+  padding: 16px;
+}
+
+.stall-table-panel .ant-card-body {
+  padding-top: 8px;
+}
+
 .stall-list-table {
-  margin-top: 16px;
+  margin-top: 0;
+}
+
+.stall-list-table .ant-table {
+  border-radius: 12px;
+  border: 1px solid #edf2f8;
+}
+
+.stall-list-table .ant-table-thead > tr > th {
+  background: #f1f5f9;
+  color: var(--stall-ink);
+  font-weight: 700;
+  font-size: 13px;
+  border-bottom: 1px solid #dbe3ef;
+}
+
+.stall-list-table .ant-table-tbody > tr:nth-child(odd) > td {
+  background: #fbfdff;
+}
+
+.stall-list-table .ant-table-tbody > tr:hover > td {
+  background: #e7f2ff;
+}
+
+.stall-list-table .ant-table-cell {
+  padding-top: 13px;
+  padding-bottom: 13px;
+  color: #1e293b;
+}
+
+.stall-list-table .ant-pagination {
+  margin-bottom: 2px;
 }
 
 .stall-table-thumbnail {
@@ -15,4 +188,62 @@
   height: 56px;
   border-radius: 10px;
   object-fit: cover;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.stall-table-thumbnail:hover {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.stall-page-wrap .ant-btn-primary {
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+}
+
+.stall-page-wrap .ant-input-affix-wrapper,
+.stall-page-wrap .ant-select-selector {
+  border-radius: 12px;
+}
+
+.stall-empty-state {
+  padding: 18px 10px;
+}
+
+.stall-empty-state .ant-typography {
+  margin-bottom: 0;
+}
+
+@media (max-width: 991px) {
+  .stall-hero {
+    padding: 22px;
+  }
+
+  .stall-hero-badge {
+    height: 28px;
+    padding: 0 10px;
+  }
+
+  .stall-panel-card .ant-card-body {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 767px) {
+  .stall-hero {
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .stall-hero-description.ant-typography {
+    font-size: 14px;
+  }
+
+  .stall-kpi-card .ant-card-body {
+    padding: 14px;
+  }
+
+  .stall-list-table .ant-table-cell {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
 }

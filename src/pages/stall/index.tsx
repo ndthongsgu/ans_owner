@@ -16,6 +16,7 @@ import {
   Popconfirm,
   Row,
   Select,
+  Skeleton,
   Space,
   Table,
   type TableColumnsType,
@@ -255,6 +256,14 @@ export default function StallPage() {
     });
   }, [filterCategory, filterPriceRange, getStallAddress, keyword, stalls]);
 
+  const totalCategories = useMemo(
+    () =>
+      new Set(
+        stalls.map((stall) => (stall.category || "").trim()).filter(Boolean),
+      ).size,
+    [stalls],
+  );
+
   const visibleStalls = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
@@ -367,6 +376,14 @@ export default function StallPage() {
     (typeof remainingStalls === "number"
       ? remainingStalls <= 0
       : currentStalls >= maxStalls);
+
+  const occupancyPercent = useMemo(() => {
+    if (!hasStallLimit || !maxStalls) {
+      return null;
+    }
+
+    return Math.min(100, Math.round((currentStalls / maxStalls) * 100));
+  }, [currentStalls, hasStallLimit, maxStalls]);
 
   const handleOpenAddStallModal = () => {
     if (isLoadingLimit) {
@@ -579,19 +596,25 @@ export default function StallPage() {
   ];
 
   return (
-    <Space direction="vertical" size="middle" className="stall-page-wrap">
-      <Card
-        title="Quản lý quán ăn"
-        extra={
-          <Space>
-            {hasStallLimit ? (
-              <Typography.Text
-                type={reachedStallLimit ? "danger" : "secondary"}
-              >
-                Đã dùng {currentStalls}/{maxStalls} quán, còn{" "}
-                {remainingStalls ?? 0} quán
-              </Typography.Text>
-            ) : null}
+    <Space direction="vertical" size="large" className="stall-page-wrap">
+      <section className="stall-hero">
+        <div className="stall-hero-content">
+          <Typography.Text className="stall-hero-kicker">
+            Owner Control Center
+          </Typography.Text>
+          <Typography.Title level={2} className="stall-hero-title">
+            Tăng doanh thu bằng dashboard quản lý quán trực quan
+          </Typography.Title>
+          <Typography.Paragraph className="stall-hero-description">
+            Một màn hình duy nhất để theo dõi danh mục, cập nhật quán, kiểm soát
+            giới hạn gói và ra quyết định nhanh theo dữ liệu thời gian thực.
+          </Typography.Paragraph>
+          <Space wrap className="stall-hero-badges">
+            <span className="stall-hero-badge">Realtime quản lý quán</span>
+            <span className="stall-hero-badge">Chỉnh sửa siêu nhanh</span>
+            <span className="stall-hero-badge">Tối ưu cho mobile</span>
+          </Space>
+          <Space wrap>
             <Button
               size="large"
               type={reachedStallLimit ? "default" : "primary"}
@@ -602,13 +625,64 @@ export default function StallPage() {
             >
               Thêm quán mới
             </Button>
+            {hasStallLimit ? (
+              <Typography.Text
+                className="stall-hero-limit"
+                type={reachedStallLimit ? "danger" : "secondary"}
+              >
+                Đã dùng {currentStalls}/{maxStalls} quán, còn{" "}
+                {remainingStalls ?? 0}
+              </Typography.Text>
+            ) : null}
           </Space>
-        }
-      />
+        </div>
+      </section>
 
-      <Card>
+      <Row gutter={[16, 16]} className="stall-kpi-row">
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="stall-kpi-card">
+            <Typography.Text type="secondary">Tổng quán</Typography.Text>
+            <Typography.Title level={3} className="stall-kpi-value">
+              {stalls.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="stall-kpi-card">
+            <Typography.Text type="secondary">
+              Hiển thị hiện tại
+            </Typography.Text>
+            <Typography.Title level={3} className="stall-kpi-value">
+              {filteredStalls.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="stall-kpi-card">
+            <Typography.Text type="secondary">Danh mục</Typography.Text>
+            <Typography.Title level={3} className="stall-kpi-value">
+              {totalCategories}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card className="stall-kpi-card">
+            <Typography.Text type="secondary">Có thể thêm</Typography.Text>
+            <Typography.Title level={3} className="stall-kpi-value">
+              {hasStallLimit ? (remainingStalls ?? 0) : "-"}
+            </Typography.Title>
+            {occupancyPercent !== null ? (
+              <Typography.Text className="stall-kpi-subtext" type="secondary">
+                Dung lượng gói đã dùng {occupancyPercent}%
+              </Typography.Text>
+            ) : null}
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="stall-panel-card">
         <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} md={10}>
+          <Col xs={24} lg={10}>
             <Input
               size="large"
               value={keyword}
@@ -618,9 +692,10 @@ export default function StallPage() {
               }}
               prefix={<SearchOutlined />}
               placeholder="Tìm theo tên quán hoặc tọa độ"
+              allowClear
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} lg={7}>
             <Select
               size="large"
               value={filterCategory}
@@ -630,9 +705,10 @@ export default function StallPage() {
                 setCurrentPage(1);
               }}
               suffixIcon={<FilterOutlined />}
+              style={{ width: "100%" }}
             />
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} lg={7}>
             <Select
               size="large"
               value={filterPriceRange}
@@ -642,31 +718,51 @@ export default function StallPage() {
                 setCurrentPage(1);
               }}
               suffixIcon={<FilterOutlined />}
+              style={{ width: "100%" }}
             />
           </Col>
         </Row>
       </Card>
-      <Card>
-        <Table
-          className="stall-list-table"
-          rowKey="id"
-          columns={stallColumns}
-          dataSource={filteredStalls}
-          size="middle"
-          scroll={{ x: 980 }}
-          loading={isLoading}
-          pagination={{
-            current: currentPage,
-            pageSize,
-            total: filteredStalls.length,
-            showSizeChanger: true,
-            pageSizeOptions: ["5", "10", "50", "100"],
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            },
-          }}
-        />
+
+      <Card className="stall-panel-card stall-table-panel">
+        {isLoading ? (
+          <Skeleton active paragraph={{ rows: 7 }} />
+        ) : (
+          <Table
+            className="stall-list-table"
+            rowKey="id"
+            columns={stallColumns}
+            dataSource={filteredStalls}
+            size="middle"
+            scroll={{ x: 980 }}
+            loading={isLoading}
+            pagination={{
+              current: currentPage,
+              pageSize,
+              total: filteredStalls.length,
+              showSizeChanger: true,
+              pageSizeOptions: ["5", "10", "50", "100"],
+              showTotal: (total) => `Tổng cộng ${total} quán`,
+              responsive: true,
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              },
+            }}
+            locale={{
+              emptyText: (
+                <div className="stall-empty-state">
+                  <Typography.Text strong>
+                    Chưa có quán phù hợp bộ lọc
+                  </Typography.Text>
+                  <Typography.Paragraph type="secondary">
+                    Thử đổi danh mục, mức giá hoặc tạo quán mới để bắt đầu.
+                  </Typography.Paragraph>
+                </div>
+              ),
+            }}
+          />
+        )}
       </Card>
       <StallAddModal
         open={isAddStallModalOpen}

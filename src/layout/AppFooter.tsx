@@ -92,7 +92,7 @@ export default function AppFooter() {
               Bảng điều khiển
             </Link>
             <Link to={PUBLIC_ROUTES.LOGIN} style={{ color: "#333" }}>
-              Đăng nhập quản trị
+              Đăng nhập
             </Link>
             <Link
               to={REQUIRE_AUTH_ROUTES.OWNER_PROFILE}

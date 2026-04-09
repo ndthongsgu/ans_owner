@@ -3,7 +3,6 @@ import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
-  ReloadOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import {
@@ -15,6 +14,7 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Skeleton,
   Space,
   Table,
   Typography,
@@ -395,6 +395,23 @@ export default function StallContentPage() {
     });
   }, [keyword, stallContents]);
 
+  const scriptedChars = useMemo(
+    () =>
+      stallContents.reduce(
+        (sum, item) => sum + (item.tts_script?.length || 0),
+        0,
+      ),
+    [stallContents],
+  );
+
+  const averageScriptLength = useMemo(() => {
+    if (!stallContents.length) {
+      return 0;
+    }
+
+    return Math.round(scriptedChars / stallContents.length);
+  }, [scriptedChars, stallContents.length]);
+
   const columns: TableColumnsType<StallContentResponse> = [
     {
       title: "Tên quán",
@@ -467,27 +484,78 @@ export default function StallContentPage() {
   return (
     <Space
       direction="vertical"
-      size="middle"
+      size="large"
       className="stall-content-page-wrap"
     >
-      <Card
-        title="Quản lý nội dung thuyết minh"
-        extra={
-          <Space>
-            <Button
-              type="primary"
-              icon={<AppstoreAddOutlined />}
-              onClick={openAddModal}
-            >
-              Thêm nội dung
-            </Button>
+      <section className="stall-content-hero">
+        <div className="stall-content-hero-content">
+          <Typography.Text className="stall-content-hero-kicker">
+            Audio Story Experience
+          </Typography.Text>
+          <Typography.Title level={2} className="stall-content-hero-title">
+            Biến mỗi quán thành một trải nghiệm kể chuyện bán được
+          </Typography.Title>
+          <Typography.Paragraph className="stall-content-hero-description">
+            Quản lý kịch bản thuyết minh theo ngôn ngữ, tối ưu nội dung theo
+            từng điểm bán và theo dõi mức độ phong phú của hệ thống chỉ trong
+            một trang.
+          </Typography.Paragraph>
+          <Space wrap className="stall-content-hero-badges">
+            <span className="stall-content-hero-badge">Đa ngôn ngữ</span>
+            <span className="stall-content-hero-badge">Tối ưu conversion</span>
+            <span className="stall-content-hero-badge">Chuẩn hoá vận hành</span>
           </Space>
-        }
-      />
+          <Button
+            type="primary"
+            size="large"
+            icon={<AppstoreAddOutlined />}
+            onClick={openAddModal}
+          >
+            Thêm nội dung
+          </Button>
+        </div>
+      </section>
 
-      <Card>
+      <Row gutter={[16, 16]} className="stall-content-kpi-row">
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="stall-content-kpi-card">
+            <Typography.Text type="secondary">Bản thuyết minh</Typography.Text>
+            <Typography.Title level={3} className="stall-content-kpi-value">
+              {stallContents.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="stall-content-kpi-card">
+            <Typography.Text type="secondary">
+              Hiển thị theo lọc
+            </Typography.Text>
+            <Typography.Title level={3} className="stall-content-kpi-value">
+              {filteredStallContents.length}
+            </Typography.Title>
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card className="stall-content-kpi-card">
+            <Typography.Text type="secondary">
+              Tổng ký tự script
+            </Typography.Text>
+            <Typography.Title level={3} className="stall-content-kpi-value">
+              {scriptedChars}
+            </Typography.Title>
+            <Typography.Text
+              className="stall-content-kpi-subtext"
+              type="secondary"
+            >
+              Trung bình {averageScriptLength} ký tự / nội dung
+            </Typography.Text>
+          </Card>
+        </Col>
+      </Row>
+
+      <Card className="stall-content-panel-card">
         <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} md={12}>
+          <Col xs={24} md={14}>
             <Input
               size="large"
               value={keyword}
@@ -497,31 +565,50 @@ export default function StallContentPage() {
               }}
               prefix={<SearchOutlined />}
               placeholder="Tìm theo nội dung thuyết minh"
+              allowClear
             />
           </Col>
         </Row>
       </Card>
 
-      <Card>
-        <Table
-          className="stall-content-table"
-          rowKey="id"
-          loading={isStallContentsLoading}
-          columns={columns}
-          dataSource={filteredStallContents}
-          scroll={{ x: 1080 }}
-          pagination={{
-            current: currentPage,
-            pageSize,
-            total: filteredStallContents.length,
-            showSizeChanger: true,
-            pageSizeOptions: ["5", "10", "20"],
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            },
-          }}
-        />
+      <Card className="stall-content-panel-card stall-content-table-panel">
+        {isStallContentsLoading ? (
+          <Skeleton active paragraph={{ rows: 7 }} />
+        ) : (
+          <Table
+            className="stall-content-table"
+            rowKey="id"
+            loading={isStallContentsLoading}
+            columns={columns}
+            dataSource={filteredStallContents}
+            scroll={{ x: 1080 }}
+            pagination={{
+              current: currentPage,
+              pageSize,
+              total: filteredStallContents.length,
+              showSizeChanger: true,
+              pageSizeOptions: ["5", "10", "20"],
+              showTotal: (total) => `Tổng cộng ${total} nội dung`,
+              responsive: true,
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              },
+            }}
+            locale={{
+              emptyText: (
+                <div className="stall-content-empty-state">
+                  <Typography.Text strong>
+                    Chưa có nội dung phù hợp
+                  </Typography.Text>
+                  <Typography.Paragraph type="secondary">
+                    Hãy tạo script mới hoặc điều chỉnh từ khóa để tìm nhanh hơn.
+                  </Typography.Paragraph>
+                </div>
+              ),
+            }}
+          />
+        )}
       </Card>
 
       <StallContentAddModal

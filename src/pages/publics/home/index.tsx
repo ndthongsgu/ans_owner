@@ -94,11 +94,11 @@ export default function HomeScreen() {
                   size="large"
                   icon={<CheckCircleOutlined />}
                 >
-                  Đăng ký demo
+                  Đăng ký dùng thử
                 </Button>
               </Link>
               <Link to={PUBLIC_ROUTES.LOGIN}>
-                <Button size="large">Đăng nhập quản trị</Button>
+                <Button size="large">Đăng nhập</Button>
               </Link>
             </Space>
           </Space>
