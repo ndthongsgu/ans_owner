@@ -1,4 +1,34 @@
 import dayjs, { type Dayjs } from "dayjs";
+import { API_ROUTES } from "@/services/api-route";
+import { DEFAULT_NEW_COVER_IMAGE } from "@/constants/stall.constants";
+
+export function normalizeStallCoverImage(rawImage?: string | null): string {
+  const trimmed = (rawImage || "").trim();
+  if (!trimmed) {
+    return DEFAULT_NEW_COVER_IMAGE;
+  }
+
+  if (
+    trimmed.startsWith("data:image/") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("blob:")
+  ) {
+    return trimmed;
+  }
+
+  const looksLikeBase64 =
+    /^[A-Za-z0-9+/]+=*$/.test(trimmed) && trimmed.length > 100;
+  if (looksLikeBase64) {
+    return `data:image/jpeg;base64,${trimmed}`;
+  }
+
+  if (trimmed.startsWith("/")) {
+    return `${API_ROUTES.BASE_URL}${trimmed}`;
+  }
+
+  return `${API_ROUTES.BASE_URL}/${trimmed}`;
+}
 
 export function hourStringToDayjs(
   value?: string | Dayjs | null,

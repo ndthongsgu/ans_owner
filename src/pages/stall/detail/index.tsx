@@ -1,5 +1,6 @@
 import { Descriptions, Image, Space } from "antd";
 import type { StallResponse } from "@/dto/stall.dto";
+import { normalizeStallCoverImage } from "@/utils/stall.utils";
 
 type StallDetailProps = {
   stall: StallResponse;
@@ -18,7 +19,10 @@ export default function StallDetail({
 }: StallDetailProps) {
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-      <Image src={stall.cover_image} alt={stall.cover_image} />
+      <Image
+        src={normalizeStallCoverImage(stall.cover_image)}
+        alt={stall.cover_image}
+      />
       <Descriptions column={1} bordered size="small">
         <Descriptions.Item label="Tên quán">
           {stall.stall_name}
