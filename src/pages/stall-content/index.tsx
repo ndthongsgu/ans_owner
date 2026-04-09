@@ -1,9 +1,4 @@
 import {
-  AppstoreAddOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  ReloadOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import {
@@ -15,13 +10,22 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Skeleton,
   Space,
   Table,
   Typography,
-  Tag,
+  Tooltip,
   type TableColumnsType,
 } from "antd";
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Eye,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import type {
   StallContentCreateRequest,
   StallContentResponse,
@@ -41,6 +45,7 @@ import {
 import StallContentAddModal from "./add";
 import StallContentDetail from "./detail";
 import StallContentEditModal from "./edit";
+import StallContentMap from "@/components/stall-content/StallContentMap";
 import { LANGUAGE_LABELS } from "@/utils/language.utils";
 import { formatUnixTimestamp } from "@/utils/date.utils";
 import "./index.css";
@@ -60,9 +65,15 @@ export default function StallContentPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const [editingItem, setEditingItem] = useState<StallContentResponse | null>(null);
-  const [viewingItem, setViewingItem] = useState<StallContentResponse | null>(null);
-  const [selectedPlaybackLanguage, setSelectedPlaybackLanguage] = useState<string | undefined>(undefined);
+  const [editingItem, setEditingItem] = useState<StallContentResponse | null>(
+    null,
+  );
+  const [viewingItem, setViewingItem] = useState<StallContentResponse | null>(
+    null,
+  );
+  const [selectedPlaybackLanguage, setSelectedPlaybackLanguage] = useState<
+    string | undefined
+  >(undefined);
 
   const { data: stallContents = [], isLoading: isStallContentsLoading } =
     useStallContents();
@@ -227,7 +238,10 @@ export default function StallContentPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editingItem) return;
+    if (!editingItem) {
+      return;
+    }
+
     try {
       const values = await editForm.validateFields();
 
@@ -261,20 +275,67 @@ export default function StallContentPage() {
       };
 
       showLoading();
-      await updateMutation.mutateAsync({
-        stallId: editingItem.stall_id,
-        contentId: editingItem.id,
-        payload: {
-          language_code: values.language_code,
-          tts_script: values.tts_script?.trim(),
-        },
-      });
+      try {
+        await updateMutation.mutateAsync({
+          stallId,
+          contentId,
+          payload,
+        });
+      } finally {
+        hideLoading();
+      }
+
       setIsEditModalOpen(false);
-      showToast({ type: "success", title: "Thành công", message: "Đã cập nhật" });
-    } catch (err) {
-      showToast({ type: "error", title: "Lỗi", message: "Không thể lưu thay đổi" });
-    } finally {
-      hideLoading();
+      setEditingItem(null);
+      editForm.resetFields();
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Đã cập nhật nội dung thuyết minh",
+      });
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "errorFields" in error &&
+        Array.isArray((error as { errorFields?: unknown[] }).errorFields)
+      ) {
+        showToast({
+          type: "warning",
+          title: "Thiếu thông tin",
+          message: "Vui lòng nhập đầy đủ nội dung thuyết minh trước khi lưu",
+        });
+        return;
+      }
+
+      const apiMessage =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        (
+          error as {
+            response?: { data?: { message?: string; error?: string } };
+          }
+        ).response?.data
+          ? (
+              error as {
+                response?: { data?: { message?: string; error?: string } };
+              }
+            ).response?.data?.message ||
+            (
+              error as {
+                response?: { data?: { message?: string; error?: string } };
+              }
+            ).response?.data?.error
+          : undefined;
+
+      showToast({
+        type: "error",
+        title: "Không thể lưu",
+        message:
+          apiMessage ||
+          "Lưu nội dung thất bại. Vui lòng thử lại hoặc kiểm tra dữ liệu gửi lên",
+      });
     }
   };
 
@@ -313,17 +374,25 @@ export default function StallContentPage() {
         message: "Nội dung thuyết minh đã được xóa",
       });
     } catch {
-      showToast({ type: "error", title: "Thất bại", message: "Không thể xóa" });
+      showToast({
+        type: "error",
+        title: "Xóa thất bại",
+        message: "Không thể xóa nội dung, vui lòng thử lại",
+      });
     }
+  };
+
+  const openDetailModal = (item: StallContentResponse) => {
+    const preferredLanguage = item.language_code?.trim() || undefined;
+
+    setSelectedPlaybackLanguage(preferredLanguage);
+    setViewingItem(item);
+    setIsDetailModalOpen(true);
   };
 
   const filteredStallContents = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
-    if (!kw) return enrichedStallContents;
-    return enrichedStallContents.filter((item) =>
-      `${item.display_stall_name} ${item.title} ${item.tts_script}`.toLowerCase().includes(kw)
-    );
-  }, [keyword, enrichedStallContents]);
+    if (!kw) return stallContents;
 
     return stallContents.filter((item) => {
       const searchable =
@@ -332,111 +401,229 @@ export default function StallContentPage() {
     });
   }, [keyword, stallContents]);
 
+  const stallsWithContent = useMemo(() => {
+    const stallIds = new Set(stallContents.map((item) => item.stall_id));
+    return stalls.filter((stall) => stallIds.has(stall.id));
+  }, [stallContents, stalls]);
+
   const columns: TableColumnsType<StallContentResponse> = [
     {
       title: "Tên quán",
-      dataIndex: "display_stall_name",
-      key: "display_stall_name",
-      fixed: 'left',
+      dataIndex: "stall_name",
+      key: "stall_name",
       width: 150,
-      render: (text) => <Typography.Text strong>{text}</Typography.Text>,
+      render: (value: string) => (
+        <Tooltip title={value}>
+          <Typography.Text strong ellipsis>
+            {value}
+          </Typography.Text>
+        </Tooltip>
+      ),
     },
     {
-      title: "Ngôn ngữ",
-      dataIndex: "language_code",
-      key: "language_code",
-      width: 100,
-      render: (code) => <Tag color="blue">{LANGUAGE_LABELS[code] || code.toUpperCase()}</Tag>,
+      title: "Nội dung thuyết minh",
+      dataIndex: "tts_script",
+      key: "tts_script",
+      width: 300,
+      render: (value: string) => (
+        <Tooltip title={value}>
+          <Typography.Text 
+            ellipsis
+            className="stall-content-summary-text"
+          >
+            {value}
+          </Typography.Text>
+        </Tooltip>
+      ),
     },
     {
-      title: "Thời gian tạo",
+      title: "Tạo lúc",
       dataIndex: "created_at",
       key: "created_at",
-      width: 160,
-      render: (value: number | undefined) => formatUnixTimestamp(value),
+      width: 130,
+      responsive: ["xl"],
+      render: (value: number | undefined) => (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {formatUnixTimestamp(value)}
+        </Typography.Text>
+      ),
     },
     {
-      title: "Thời lượng",
-      dataIndex: "audio_duration",
-      key: "audio_duration",
-      width: 100,
-      render: (d) => d ? `${d}s` : "-",
-    },
-    {
-      title: "Phiên bản",
-      dataIndex: "version",
-      key: "version",
-      width: 90,
-      render: (v) => <Tag>v{v}</Tag>,
-    },
-    {
-      title: "Ngày tạo",
-      dataIndex: "created_at",
-      key: "created_at",
-      width: 160,
-      render: (value: number | undefined) => formatUnixTimestamp(value),
+      title: "Cập nhật",
+      dataIndex: "updated_at",
+      key: "updated_at",
+      width: 130,
+      responsive: ["xl"],
+      render: (value: number | undefined) => (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {formatUnixTimestamp(value)}
+        </Typography.Text>
+      ),
     },
     {
       title: "Thao tác",
       key: "actions",
-      fixed: 'right',
-      width: 220,
+      width: 260,
+      fixed: "right",
       render: (_, record) => (
-        <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => {
-            setViewingItem(record);
-            setSelectedPlaybackLanguage(record.language_code);
-            setIsDetailModalOpen(true);
-          }}>Xem</Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => {
-            setEditingItem(record);
-            editForm.setFieldsValue({ ...record });
-            setIsEditModalOpen(true);
-          }}>Sửa</Button>
-          <Popconfirm title="Xóa?" onConfirm={() => handleDelete(record)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>Xóa</Button>
-          </Popconfirm>
+        <Space size="small" className="stall-content-action-buttons">
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              size="small"
+              className="stall-content-action-btn"
+              icon={<Eye size={16} />}
+              onClick={() => openDetailModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa">
+            <Button
+              type="text"
+              size="small"
+              className="stall-content-action-btn"
+              icon={<Pencil size={16} />}
+              onClick={() => openEditModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Popconfirm
+              title="Xóa nội dung"
+              description="Bạn có chắc chắn muốn xóa nội dung này?"
+              okText="Xóa"
+              okType="danger"
+              cancelText="Hủy"
+              onConfirm={() => handleDelete(record)}
+            >
+              <Button 
+                type="text" 
+                size="small"
+                className="stall-content-action-btn"
+                danger 
+                icon={<Trash2 size={16} />}
+              />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
   ];
+    
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Card title="Quản lý nội dung thuyết minh" extra={
-        <Button type="primary" icon={<AppstoreAddOutlined />} onClick={openAddModal}>Thêm mới</Button>
-      } />
+    <div className="stall-content-page-wrap dashboard-theme-food">
+      <main className="dashboard-main-content">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="stall-content-header-card">
+            <div>
+              <h1 className="stall-content-header-title">
+                Quản lý nội dung thuyết minh
+              </h1>
+              <p className="stall-content-header-subtitle">
+                Bố cục gọn gàng, trực quan để thao tác nhanh và theo dõi dễ hơn.
+              </p>
+            </div>
+            <div className="stall-content-stats">
+              <div className="stall-content-stat-item">
+                <div className="stall-content-stat-label">Tổng nội dung</div>
+                <div className="stall-content-stat-value">{stallContents.length}</div>
+              </div>
+              <div className="stall-content-stat-item">
+                <div className="stall-content-stat-label">Quán được gán</div>
+                <div className="stall-content-stat-value">
+                  {stallContents.filter((c) => c.stall_id).length}
+                </div>
+              </div>
+              <div className="stall-content-stat-item">
+                <div className="stall-content-stat-label">Quán khả dụng</div>
+                <div className="stall-content-stat-value">{availableStalls.length}</div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
-      <Card>
-        <Row gutter={16}>
-          <Col flex="auto">
-            <Input
-              prefix={<SearchOutlined />}
-              placeholder="Tìm kiếm quán hoặc nội dung..."
-              value={keyword}
-              onChange={e => setKeyword(e.target.value)}
-              allowClear
+        <Card className="stall-content-filter-card">
+          <Row gutter={[12, 12]} align="middle">
+            <Col xs={24} md={16}>
+              <Input
+                size="large"
+                value={keyword}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setCurrentPage(1);
+                }}
+                prefix={<SearchOutlined />}
+                suffix={<Search size={16} className="dashboard-input-icon" />}
+                placeholder="Tìm theo tên quán hoặc nội dung thuyết minh"
+              />
+            </Col>
+            <Col xs={24} md="auto" style={{ marginLeft: "auto" }}>
+              <Button
+                size="large"
+                type="primary"
+                className="dashboard-primary-button"
+                icon={<Plus size={16} />}
+                onClick={openAddModal}
+              >
+                Thêm nội dung
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+
+        <Card className="stall-content-table-card">
+          {isStallContentsLoading ? (
+            <div className="dashboard-skeleton-wrap">
+              <Skeleton active paragraph={{ rows: 2 }} />
+              <Skeleton active paragraph={{ rows: 3 }} />
+            </div>
+          ) : (
+            <Table
+              className="stall-content-table"
+              rowKey="id"
+              columns={columns}
+              dataSource={filteredStallContents}
+              size="middle"
+              scroll={{ x: 1080 }}
+              rowClassName={(_, index) =>
+                index % 2 === 0
+                  ? "dashboard-row-striped-even"
+                  : "dashboard-row-striped-odd"
+              }
+              pagination={{
+                current: currentPage,
+                pageSize,
+                total: filteredStallContents.length,
+                showSizeChanger: true,
+                pageSizeOptions: ["5", "10", "20", "50"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trên ${total} nội dung`,
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  setPageSize(size);
+                },
+              }}
             />
-          </Col>
-          <Col>
-            <Button icon={<ReloadOutlined />} onClick={() => setKeyword("")}>Làm mới</Button>
-          </Col>
-        </Row>
-      </Card>
+          )}
+        </Card>
 
-      <Table
-        rowKey="id"
-        loading={isStallContentsLoading}
-        columns={columns}
-        dataSource={filteredStallContents}
-        scroll={{ x: 1200 }}
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total: filteredStallContents.length,
-          onChange: (p, s) => { setCurrentPage(p); setPageSize(s); }
-        }}
-      />
+        <Card title="Bản đồ nội dung thuyết minh" className="stall-content-map-card">
+          {isStallContentsLoading ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : (
+            <StallContentMap
+              stalls={stallsWithContent}
+              stallContents={stallContents}
+              onStallClick={(stall) => {
+                console.log("Play audio for stall:", stall.id);
+              }}
+            />
+          )}
+        </Card>
+      </main>
 
       {/* Modals */}
       <StallContentAddModal
@@ -448,6 +635,7 @@ export default function StallContentPage() {
         }}
         onCreate={handleCreate}
         stallOptions={stallOptions}
+        stalls={stalls}
       />
 
       <StallContentEditModal
@@ -463,21 +651,35 @@ export default function StallContentPage() {
       />
 
       <Modal
-        title="Chi tiết thuyết minh"
+        title="Chi tiết nội dung thuyết minh"
         open={isDetailModalOpen}
-        onCancel={() => setIsDetailModalOpen(false)}
+        onCancel={() => {
+          setIsDetailModalOpen(false);
+          setViewingItem(null);
+          setSelectedPlaybackLanguage(undefined);
+        }}
         footer={null}
-        width={800}
+        width={900}
+        modalRender={(node) => (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.22 }}
+          >
+            {node}
+          </motion.div>
+        )}
       >
-        {viewingItem && (
+        {viewingItem ? (
           <StallContentDetail
             item={viewingItem}
             selectedLanguage={selectedPlaybackLanguage}
             languageOptions={languageOptions}
             onChangeLanguage={setSelectedPlaybackLanguage}
           />
-        )}
+        ) : null}
       </Modal>
-    </Space>
+    </div>
   );
 }

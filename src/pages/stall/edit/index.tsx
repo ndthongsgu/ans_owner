@@ -36,7 +36,11 @@ import {
   extractCoordinates,
   normalizeCoordinate,
 } from "@/utils/location.utils";
-import { hourStringToDayjs, hourValueToString } from "@/utils/stall.utils";
+import {
+  hourStringToDayjs,
+  hourValueToString,
+  normalizeStallCoverImage,
+} from "@/utils/stall.utils";
 import "../add/index.css";
 
 const { Text } = Typography;
@@ -130,7 +134,13 @@ function MapUpdater({ position, open }: MapUpdaterProps) {
     if (!coordinates) return;
 
     const { lat, lng } = coordinates;
-    if (!isValidLatLng(lat, lng)) {
+
+    // Double-check that coordinates are valid before trying to use them
+    if (
+      !isValidLatLng(lat, lng) ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng)
+    ) {
       return;
     }
 
@@ -172,6 +182,11 @@ export default function StallEditModal({
     const lat = Number(latValue);
     const lng = Number(lngValue);
 
+    // Check if both values are valid finite numbers
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return undefined;
+    }
+
     if (!isValidLatLng(lat, lng)) {
       return undefined;
     }
@@ -182,6 +197,11 @@ export default function StallEditModal({
   const safeSelectedPosition = useMemo<LatLngExpression | undefined>(() => {
     const coordinates = extractCoordinates(selectedPosition);
     if (!coordinates) return undefined;
+
+    // Validate that coordinates are finite numbers before returning
+    if (!isValidLatLng(coordinates.lat, coordinates.lng)) {
+      return undefined;
+    }
 
     return [coordinates.lat, coordinates.lng];
   }, [selectedPosition]);
@@ -200,43 +220,79 @@ export default function StallEditModal({
       const existingLocation =
         (stall as unknown as { location?: string }).location || "";
 
-      form.setFieldsValue({
-        ...stall,
+      // Validate latitude and longitude before using them
+      const validLat =
+        typeof stall.latitude === "number" && Number.isFinite(stall.latitude)
+          ? stall.latitude
+          : undefined;
+      const validLng =
+        typeof stall.longitude === "number" && Number.isFinite(stall.longitude)
+          ? stall.longitude
+          : undefined;
+
+      // Only set form values with valid coordinates
+      const formValues: Partial<StallEditFormValues> = {
+        stall_name: stall.stall_name,
+        category: stall.category,
+        price_range: stall.price_range,
+        radius: stall.radius,
+        contact_phone: stall.contact_phone,
+        website: stall.website,
         opening_hours: hourStringToDayjs(stall.opening_hours),
         close_hours: hourStringToDayjs(stall.close_hours),
         cover_image: stall.cover_image,
-        price_range: stall.price_range,
         location: existingLocation,
-      });
+      };
 
-      const initialPosition = toValidPosition(stall.latitude, stall.longitude);
-      if (initialPosition) {
-        setSelectedPosition(initialPosition);
-        if (!existingLocation) {
-          const coordinates = extractCoordinates(initialPosition);
-          if (!coordinates) return;
-
-          void reverseGeocode(coordinates.lat, coordinates.lng).then((name) => {
-            form.setFields([{ name: "location", value: name }]);
-            setLocationQuery(name);
-          });
-        } else {
-          setLocationQuery(existingLocation);
-        }
-      } else {
-        setSelectedPosition(undefined);
+      // Only set coordinates if they're valid
+      if (validLat && validLng) {
+        formValues.latitude = validLat;
+        formValues.longitude = validLng;
       }
 
-      return;
+      form.setFieldsValue(formValues);
+
+      // Defer state updates to avoid cascading renders
+      const timer = window.setTimeout(() => {
+        if (validLat && validLng) {
+          const initialPosition = toValidPosition(validLat, validLng);
+          if (initialPosition) {
+            setSelectedPosition(initialPosition);
+            if (!existingLocation) {
+              const coordinates = extractCoordinates(initialPosition);
+              if (coordinates) {
+                void reverseGeocode(coordinates.lat, coordinates.lng).then(
+                  (name) => {
+                    form.setFields([{ name: "location", value: name }]);
+                    setLocationQuery(name);
+                  },
+                );
+              }
+            } else {
+              setLocationQuery(existingLocation);
+            }
+          }
+        } else {
+          setLocationQuery(existingLocation);
+          setSelectedPosition(undefined);
+        }
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
 
+    // Handle modal close
     if (!open) {
-      form.resetFields();
-      setSelectedPosition(undefined);
-      setLocationOptions([]);
-      setSearchingLocation(false);
-      setLocationQuery("");
-      latestQueryRef.current = "";
+      const timer = window.setTimeout(() => {
+        form.resetFields();
+        setSelectedPosition(undefined);
+        setLocationOptions([]);
+        setSearchingLocation(false);
+        setLocationQuery("");
+        latestQueryRef.current = "";
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
   }, [open, stall, form]);
 
@@ -247,6 +303,22 @@ export default function StallEditModal({
       }
     };
   }, []);
+
+  const readFileAsDataUrl = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error("Không thể đọc file ảnh"));
+      };
+      reader.onerror = () => reject(new Error("Không thể đọc file ảnh"));
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleSave = async () => {
     try {
@@ -368,8 +440,15 @@ export default function StallEditModal({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    form.setFieldValue("cover_image", file);
-    form.setFields([{ name: "cover_image", errors: [] }]);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      form.setFieldValue("cover_image", dataUrl);
+      form.setFields([{ name: "cover_image", errors: [] }]);
+      message.success("Đã chọn ảnh bìa từ thiết bị");
+    } catch {
+      message.error("Không thể đọc ảnh, vui lòng thử lại");
+    }
+
     event.target.value = "";
   };
 
@@ -390,7 +469,7 @@ export default function StallEditModal({
         <Row gutter={12}>
           <Col xs={24} sm={16}>
             <Form.Item
-              name="name"
+              name="stall_name"
               label="Tên quán"
               rules={[{ required: true, message: "Vui lòng nhập tên quán" }]}
             >
@@ -622,7 +701,7 @@ export default function StallEditModal({
 
               {watchedCoverImage ? (
                 <Image
-                  src={watchedCoverImage}
+                  src={normalizeStallCoverImage(watchedCoverImage)}
                   alt="Ảnh bìa quán"
                   className="stall-cover-preview"
                 />
