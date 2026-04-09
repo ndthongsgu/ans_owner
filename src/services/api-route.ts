@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
       CREATE: "/owner/stalls",
       UPDATE: (id: string) => `/owner/stalls/${id}`,
       DELETE: (id: string) => `/owner/stalls/${id}`,
+      LIMIT: "/owner/stalls/limit",
     },
     STALL_CONTENT: {
       LIST: () => `/owner/stall-contents/all`,
@@ -58,11 +59,6 @@ export const API_ENDPOINTS = {
   },
   PAYMENTS: {
     VNPAY_CREATE: "/user/payments/vnpay/create",
-    VNPAY_STATUS: (orderId: string) => `/user/payments/vnpay/${orderId}/status`,
-  },
-  OAUTH: {
-    GOOGLE: "/oauth2/authorization/google",
-    CALLBACK: "/oauth/callback",
   },
   ROUTE: {
     ALL: "/user/routes/all",

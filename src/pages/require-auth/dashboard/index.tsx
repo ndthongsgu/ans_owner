@@ -14,6 +14,7 @@ import { useProfile } from "@/hooks/owner";
 import { useMySubscription } from "@/hooks/subscription";
 import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 import { useNavigate } from "react-router-dom";
+import { formatUnixTimestamp } from "@/utils/date.utils";
 import "./index.css";
 
 const { Title, Text } = Typography;
@@ -69,9 +70,8 @@ export default function Dashboard() {
 
   const subscriptionName = mySub?.packageName || "Chưa đăng ký";
   const expiresAt = mySub?.expiresAt || owner?.subscription_expires_at;
-  const expirationText = expiresAt
-    ? new Date(expiresAt).toLocaleDateString()
-    : null;
+  const expirationText =
+    formatUnixTimestamp(expiresAt, "", "DD/MM/YYYY") || null;
 
   const totalListens = listenSeries.reduce((sum, item) => sum + item, 0);
   const avgRating = 4.7;

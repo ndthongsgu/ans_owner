@@ -1,6 +1,5 @@
-import { Google } from "@/assets/icons";
 import { PUBLIC_ROUTES } from "@/routes/routes";
-import { Button, Divider, Form, Input, Typography } from "antd";
+import { Button, Form, Input, Typography } from "antd";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -22,11 +21,6 @@ export default function LoginScreen() {
       ...formData,
       [e.target.name]: e.target.value,
     });
-  };
-
-  const handleGoogleLogin = () => {
-    console.log("Login with Google");
-    // TODO: Tích hợp OAuth Google
   };
 
   return (
@@ -104,36 +98,6 @@ export default function LoginScreen() {
           </Button>
         </Form.Item>
       </Form>
-
-      <Divider style={{ margin: "24px 0" }}>Hoặc đăng nhập với</Divider>
-
-      <Button
-        onClick={handleGoogleLogin}
-        size="large"
-        style={{
-          width: "100%",
-          padding: "12px",
-          fontSize: "16px",
-          fontWeight: 700,
-          color: "#808080",
-          border: "1px solid #d9d9d9",
-          borderRadius: "6px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#fff",
-
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-        }}
-      >
-        <img
-          src={Google}
-          alt="Google"
-          style={{ width: "20px", height: "20px", marginRight: "8px" }}
-        />
-        Tiếp tục với Google
-      </Button>
 
       <div
         style={{

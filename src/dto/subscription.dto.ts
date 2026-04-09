@@ -4,6 +4,7 @@ export interface PackageDto {
   name: string;
   price: number;
   max_stalls: number;
+  payment_url?: string;
   description?: string;
   is_deleted?: boolean;
   created_at?: string;
@@ -11,9 +12,16 @@ export interface PackageDto {
 }
 
 export interface MySubscriptionDto {
+  owner_id?: string;
+  subscription_package_id?: string;
+  is_active?: boolean;
+  subscription_start_at?: number;
+  subscription_expires_at?: number;
+  remaining_seconds?: number;
+  package?: PackageDto;
   packageId?: string;
   packageName?: string;
-  expiresAt?: string;
+  expiresAt?: string | number;
   active: boolean;
 }
 
@@ -25,10 +33,10 @@ export interface VnpayCreatePaymentRequestDto {
 
 export interface VnpayPaymentSessionDto {
   orderId: string;
+  order_id?: string;
   amount?: number;
-  payUrl?: string;
-  deeplink?: string;
-  qrCodeUrl?: string;
+  payment_url?: string;
+  qr_code_url?: string;
   status?: string;
   message?: string;
 }

@@ -1,6 +1,7 @@
 import type { UserProfile } from "@/dto/user.dto";
 import { API_ENDPOINTS } from "@/services/api-route";
 import rootApiService from "@/services/api.service";
+import type { ApiResponse } from "@/services/type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface CustomerProfileUpdate {
@@ -20,7 +21,12 @@ export interface CustomerProfileUpdate {
 export const useGetCurrentUser = () => {
   return useQuery({
     queryKey: [API_ENDPOINTS.OWNER.ME],
-    queryFn: () => rootApiService.get<UserProfile>(API_ENDPOINTS.OWNER.ME),
+    queryFn: async () =>
+      (
+        await rootApiService.get<ApiResponse<UserProfile>>(
+          API_ENDPOINTS.OWNER.ME,
+        )
+      ).data,
     retry: false,
   });
 };
@@ -30,7 +36,10 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: (data: CustomerProfileUpdate) =>
-      rootApiService.put(API_ENDPOINTS.OWNER.UPDATE_PROFILE, data),
+      rootApiService.put<ApiResponse<unknown>>(
+        API_ENDPOINTS.OWNER.UPDATE_PROFILE,
+        data,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.ME] });
     },
@@ -42,7 +51,10 @@ export const useSetupCredentials = () => {
 
   return useMutation({
     mutationFn: (data: CustomerProfileUpdate) =>
-      rootApiService.post(API_ENDPOINTS.OWNER.UPDATE_PROFILE, data),
+      rootApiService.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.OWNER.UPDATE_PROFILE,
+        data,
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.ME] });
     },

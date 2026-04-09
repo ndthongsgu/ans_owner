@@ -1,0 +1,147 @@
+.profile-page {
+  /* --profile-bg: linear-gradient(145deg, #f4f8ff 0%, #f7fff8 45%, #fff9ef 100%); */
+  --profile-card-bg: #ffffff;
+  --profile-border: #e3eaf3;
+  --profile-title: #0f172a;
+  --profile-subtitle: #475569;
+  --profile-accent: #0f4da8;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--profile-bg);
+  border-radius: 20px;
+}
+
+.profile-header-card,
+.profile-subscription-card,
+.profile-form-card {
+  border-radius: 18px;
+  border: 1px solid var(--profile-border);
+  background: var(--profile-card-bg);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+  transition:
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.profile-header-card:hover,
+.profile-subscription-card:hover,
+.profile-form-card:hover {
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.profile-header-card .ant-card-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-page-title.ant-typography {
+  margin: 0 0 6px;
+  color: var(--profile-title);
+}
+
+.profile-page-subtitle.ant-typography {
+  margin: 0;
+  color: var(--profile-subtitle);
+  max-width: 740px;
+}
+
+.profile-status-tag {
+  margin-inline-end: 0;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 600;
+}
+
+.profile-subscription-highlight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-subscription-highlight .icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  background: linear-gradient(140deg, #fff7ed 0%, #ffedd5 100%);
+  font-size: 24px;
+}
+
+.profile-subscription-label.ant-typography {
+  color: var(--profile-subtitle);
+  font-size: 13px;
+}
+
+.profile-subscription-name.ant-typography {
+  margin: 2px 0 0;
+  color: var(--profile-title);
+}
+
+.profile-subscription-metric {
+  height: 100%;
+  border-radius: 14px;
+  border: 1px solid #ecf1f7;
+  padding: 12px 14px;
+  background: #fbfdff;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-label.ant-typography {
+  color: var(--profile-subtitle);
+  font-size: 12px;
+}
+
+.metric-value.ant-typography {
+  color: var(--profile-title);
+  font-weight: 600;
+}
+
+.profile-form-card .ant-form-item-label > label {
+  font-weight: 600;
+}
+
+.profile-form-card .ant-input,
+.profile-form-card .ant-input-affix-wrapper,
+.profile-form-card .ant-input-textarea {
+  border-radius: 12px;
+}
+
+.profile-form-card .ant-input,
+.profile-form-card .ant-input-affix-wrapper,
+.profile-form-card .ant-input-textarea textarea {
+  background: #fcfdff;
+}
+
+.profile-form-card .ant-input:focus,
+.profile-form-card .ant-input-affix-wrapper-focused,
+.profile-form-card .ant-input-textarea textarea:focus {
+  border-color: #5b8def;
+  box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.15);
+}
+
+.profile-actions {
+  margin-top: 8px;
+  padding-top: 4px;
+  border-top: 1px dashed #e9eef5;
+}
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .profile-header-card .ant-card-body {
+    flex-direction: column;
+  }
+}

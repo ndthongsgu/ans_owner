@@ -1,8 +1,6 @@
 import { useRegister } from "@/hooks/auth/auth";
 import { useToast } from "@/hooks/layout/useToast";
 import { PUBLIC_ROUTES } from "@/routes/routes";
-import { handleGoogleLogin } from "@/services/other";
-import { GoogleOutlined } from "@ant-design/icons";
 import { Button, Divider, Form, Input, Typography } from "antd";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -36,10 +34,14 @@ function RegisterPageForm() {
       setTimeout(() => {
         navigate(PUBLIC_ROUTES.LOGIN);
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errMessage =
+        error instanceof Error
+          ? error.message
+          : "Có lỗi xảy ra, vui lòng thử lại.";
       showToast({
         title: "Đăng ký thất bại",
-        message: error?.message || "Có lỗi xảy ra, vui lòng thử lại.",
+        message: errMessage,
         type: "error",
       });
     }
@@ -176,19 +178,6 @@ function RegisterPageForm() {
         </Button>
       </Form>
 
-      <Divider style={{ margin: "5px 0" }}>Hoặc đăng nhập với</Divider>
-      <Button
-        onClick={handleGoogleLogin}
-        size="large"
-        // style={googleButtonStyle}
-      >
-        {/* You will need to import the actual Google SVG/Image path */}
-        {/* <img src={Google} alt="Google" style={{ width: "20px", height: "20px", marginRight: "8px" }} /> */}
-        <GoogleOutlined
-          style={{ fontSize: "18px", marginRight: "8px", color: "#DB4437" }}
-        />
-        Tiếp tục với Google
-      </Button>
       <Divider style={{ margin: "24px 0" }}></Divider>
 
       <div style={{ textAlign: "center", fontSize: "14px", color: "#666" }}>

@@ -12,6 +12,8 @@ export type PaginatedResult<T> = {
 
 export type ApiResponse<T> = {
   success: boolean;
-  message?: string;
   data: T;
+  message: string;
+  error?: string | null;
+  statusCode: number;
 };

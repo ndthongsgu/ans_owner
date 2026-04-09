@@ -1,7 +1,7 @@
 import type { Dayjs } from "dayjs";
 
 export type StallBaseRequest = {
-  name: string;
+  stall_name: string;
   latitude: number;
   longitude: number;
   radius: number;
@@ -23,6 +23,7 @@ export type StallUpdateRequest = Partial<StallBaseRequest>;
 export type StallResponse = StallBaseRequest & {
   id: string;
   owner_id: string;
+  stall_name: string;
   average_rating?: number;
   total_reviews?: number;
   created_at?: number;
