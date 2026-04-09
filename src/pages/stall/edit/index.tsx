@@ -248,6 +248,22 @@ export default function StallEditModal({
     };
   }, []);
 
+  const readFileAsDataUrl = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          resolve(reader.result);
+          return;
+        }
+
+        reject(new Error("Không thể đọc file ảnh"));
+      };
+      reader.onerror = () => reject(new Error("Không thể đọc file ảnh"));
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -368,8 +384,15 @@ export default function StallEditModal({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    form.setFieldValue("cover_image", file);
-    form.setFields([{ name: "cover_image", errors: [] }]);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      form.setFieldValue("cover_image", dataUrl);
+      form.setFields([{ name: "cover_image", errors: [] }]);
+      message.success("Đã chọn ảnh bìa từ thiết bị");
+    } catch {
+      message.error("Không thể đọc ảnh, vui lòng thử lại");
+    }
+
     event.target.value = "";
   };
 
@@ -390,7 +413,7 @@ export default function StallEditModal({
         <Row gutter={12}>
           <Col xs={24} sm={16}>
             <Form.Item
-              name="name"
+              name="stall_name"
               label="Tên quán"
               rules={[{ required: true, message: "Vui lòng nhập tên quán" }]}
             >

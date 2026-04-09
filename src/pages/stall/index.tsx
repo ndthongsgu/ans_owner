@@ -267,7 +267,9 @@ export default function StallPage() {
       const category = stall.category || "";
       const price_range = getPriceRange(stall);
       const matchedKeyword =
-        !kw || stall.name.toLowerCase().includes(kw) || address.includes(kw);
+        !kw ||
+        stall.stall_name.toLowerCase().includes(kw) ||
+        address.includes(kw);
       const matchedCategory =
         filterCategory === "all" || category === filterCategory;
       const matchedPrice =
@@ -420,6 +422,7 @@ export default function StallPage() {
         values.opening_hours,
         values.close_hours,
       );
+      const normalizedPriceRange = String(values.price_range ?? "").trim();
       const payloadValues = { ...values };
       delete payloadValues.location;
 
@@ -431,6 +434,7 @@ export default function StallPage() {
           opening_hours: operatingHours.opening_hours,
           close_hours: operatingHours.close_hours,
           cover_image: values.cover_image,
+          price_range: normalizedPriceRange,
         });
       } finally {
         hideLoading();
@@ -466,6 +470,7 @@ export default function StallPage() {
         values.opening_hours,
         values.close_hours,
       );
+      const normalizedPriceRange = String(values.price_range ?? "").trim();
 
       await updateStallMutation.mutateAsync({
         ...values,
@@ -473,7 +478,7 @@ export default function StallPage() {
         opening_hours: operatingHours.opening_hours,
         close_hours: operatingHours.close_hours,
         cover_image: values.cover_image,
-        price_range: values.price_range,
+        price_range: normalizedPriceRange,
         id: editingStall.id,
       });
       closeEditStallModal();
@@ -517,7 +522,7 @@ export default function StallPage() {
         <Image
           src={getCoverImage(record)}
           fallback={DEFAULT_NEW_COVER_IMAGE}
-          alt={record.name}
+          alt={record.cover_image}
           className="stall-table-thumbnail"
           preview={false}
         />

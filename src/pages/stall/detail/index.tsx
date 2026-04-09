@@ -18,9 +18,11 @@ export default function StallDetail({
 }: StallDetailProps) {
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-      <Image src={stall.cover_image} alt={stall.name} />
+      <Image src={stall.cover_image} alt={stall.cover_image} />
       <Descriptions column={1} bordered size="small">
-        <Descriptions.Item label="Tên quán">{stall.name}</Descriptions.Item>
+        <Descriptions.Item label="Tên quán">
+          {stall.stall_name}
+        </Descriptions.Item>
         <Descriptions.Item label="Địa chỉ quán">
           {getStallAddress(stall)}
         </Descriptions.Item>
