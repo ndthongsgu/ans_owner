@@ -1,12 +1,10 @@
 import {
-  CheckCircleFilled,
   CrownFilled,
   FireFilled,
   SafetyCertificateFilled,
 } from "@ant-design/icons";
 import type { PackageDto } from "@/dto/subscription.dto";
 import {
-  useCheckVnpayPaymentStatus,
   useListPackages,
   useMySubscription,
   useRegisterPackage,
@@ -22,9 +20,10 @@ import {
   Typography,
   message,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./index.css";
 import { useProfile } from "@/hooks/owner";
+import { formatUnixTimestamp } from "@/utils/date.utils";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -52,35 +51,14 @@ function formatPrice(price: number) {
   return price === 0 ? "Miễn phí" : `${price.toLocaleString("vi-VN")}đ`;
 }
 
-function formatDate(value?: string) {
-  if (!value) return null;
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date.toLocaleDateString("vi-VN");
-}
-
-function formatDateFromTimestamp(value?: number | null) {
-  if (!value) return null;
-
-  const timestamp = value > 1_000_000_000_000 ? value : value * 1000;
-  const date = new Date(timestamp);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return date.toLocaleDateString("vi-VN");
-}
-
 export default function SubscriptionPackagePage() {
   const { data: packages, isLoading } = useListPackages();
   const { data: currentSubscription } = useMySubscription();
   const { data: profile } = useProfile();
   const registerMutation = useRegisterPackage();
-  const { mutateAsync: checkPaymentStatus } = useCheckVnpayPaymentStatus();
   const [selectedPackage, setSelectedPackage] = useState<PackageDto | null>(
     null,
   );
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const ownerName = profile?.owner?.full_name || "chủ quán";
   const ownerPackageId = profile?.owner?.subscription_package_id || null;
@@ -93,96 +71,70 @@ export default function SubscriptionPackagePage() {
   const hasOwnerActiveSubscription = Boolean(
     ownerPackageId && ownerExpiryMs && ownerExpiryMs > Date.now(),
   );
-  const ownerPackageExpireText = formatDateFromTimestamp(ownerExpiryAt);
-  const activePackageId = currentSubscription?.packageId || ownerPackageId;
+  const ownerPackageExpireText =
+    formatUnixTimestamp(ownerExpiryAt, "", "DD/MM/YYYY") || null;
+  const activePackageId =
+    currentSubscription?.subscription_package_id ||
+    currentSubscription?.package?.id ||
+    currentSubscription?.packageId ||
+    ownerPackageId;
+
+  const currentSubscriptionExpiryText =
+    formatUnixTimestamp(
+      currentSubscription?.subscription_expires_at,
+      "",
+      "DD/MM/YYYY",
+    ) ||
+    (currentSubscription?.expiresAt
+      ? formatUnixTimestamp(currentSubscription.expiresAt, "", "DD/MM/YYYY")
+      : null);
+
   const hasActiveSubscription = Boolean(
-    currentSubscription?.active || hasOwnerActiveSubscription,
+    currentSubscription?.is_active ||
+    currentSubscription?.active ||
+    hasOwnerActiveSubscription,
   );
   const activePackage =
-    packages?.find((pkg) => pkg.id === activePackageId) || null;
+    currentSubscription?.package ||
+    packages?.find((pkg) => pkg.id === activePackageId) ||
+    null;
   const currentPackageName =
+    currentSubscription?.package?.name ||
     currentSubscription?.packageName ||
     activePackage?.name ||
     (hasActiveSubscription ? "Gói đang hoạt động" : "Chưa đăng ký");
   const expirationText =
-    (currentSubscription?.expiresAt
-      ? new Date(currentSubscription.expiresAt).toLocaleDateString("vi-VN")
-      : null) || ownerPackageExpireText;
-
-  useEffect(() => {
-    if (!pendingOrderId) return;
-
-    let active = true;
-    let timer: number | undefined;
-
-    const pollStatus = async () => {
-      try {
-        const status = await checkPaymentStatus(pendingOrderId);
-
-        if (!active) return;
-
-        if (status.paid) {
-          message.success(
-            "Thanh toán thành công. Gói của bạn đã được cập nhật.",
-          );
-          setPendingOrderId(null);
-          setSelectedPackage(null);
-          return;
-        }
-      } catch {
-        if (!active) return;
-      }
-
-      if (active) {
-        timer = window.setTimeout(() => {
-          void pollStatus();
-        }, 5000);
-      }
-    };
-
-    void pollStatus();
-
-    return () => {
-      active = false;
-      if (timer) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, [checkPaymentStatus, pendingOrderId]);
+    currentSubscriptionExpiryText || ownerPackageExpireText;
 
   const handleOpenPayment = async (pkg: PackageDto) => {
     setSelectedPackage(pkg);
 
     try {
       const session = await registerMutation.mutateAsync(pkg.id);
-      const paymentUrl = session.payUrl || session.deeplink;
+      const paymentUrl = session?.payment_url;
 
       if (!paymentUrl) {
         throw new Error("Backend chưa trả về đường dẫn thanh toán VNPay");
       }
 
-      const opened = window.open(paymentUrl, "_blank", "noopener,noreferrer");
-      if (!opened) {
+      const paymentWindow = window.open(
+        paymentUrl,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      if (!paymentWindow) {
         message.warning(
           "Trình duyệt đang chặn popup. Vui lòng cho phép popup để mở trang thanh toán ở tab mới.",
         );
       }
 
-      if (session.orderId) {
-        setPendingOrderId(session.orderId);
-        message.info("Đã mở VNPay. Đang chờ xác nhận thanh toán...");
-      } else {
-        message.warning(
-          "Không nhận được mã giao dịch để theo dõi tự động. Vui lòng kiểm tra lại lịch sử gói sau khi thanh toán.",
-        );
-      }
+      message.info("Đã mở VNPay. Hoàn tất thanh toán trên cổng VNPay.");
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Không tạo được giao dịch VNPay";
       message.error(errorMessage);
-      setPendingOrderId(null);
       setSelectedPackage(null);
     }
   };
@@ -196,7 +148,7 @@ export default function SubscriptionPackagePage() {
           </Title>
           <Paragraph className="subscription-subtitle">
             {hasActiveSubscription
-              ? "Gói của bạn đang hoạt động. Hệ thống sẽ tự đồng bộ trạng thái và thời hạn sử dụng."
+              ? "Gói của bạn đang hoạt động. Cảm ơn bạn đã tin dùng dịch vụ của chúng tôi! Hãy tiếp tục khám phá và tận dụng tối đa các tính năng để nâng cao trải nghiệm khách hàng tại quán ăn của bạn."
               : "Chọn gói phù hợp để mở rộng trải nghiệm thuyết minh, tăng tương tác khách hàng và quản lý quán ăn hiệu quả hơn."}
           </Paragraph>
         </div>
@@ -339,27 +291,6 @@ export default function SubscriptionPackagePage() {
                           <span className="subscription-package-amount">
                             {formatPrice(pkg.price)}
                           </span>
-                        </div>
-
-                        <div className="subscription-package-footer">
-                          <div className="subscription-package-info-row">
-                            <CheckCircleFilled />
-                            <span>
-                              {pkg.is_deleted
-                                ? "Gói này đang bị ẩn"
-                                : "Gói đang khả dụng trên backend"}
-                            </span>
-                          </div>
-                          {formatDate(pkg.created_at) ? (
-                            <Text className="subscription-package-timestamp">
-                              Tạo ngày: {formatDate(pkg.created_at)}
-                            </Text>
-                          ) : null}
-                          {formatDate(pkg.updated_at) ? (
-                            <Text className="subscription-package-timestamp">
-                              Cập nhật: {formatDate(pkg.updated_at)}
-                            </Text>
-                          ) : null}
                         </div>
 
                         <Button

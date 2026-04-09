@@ -36,6 +36,7 @@ export const useAudioPlayback = (showToast: ShowToastFn) => {
     if (normalized.startsWith("en")) return "en-US";
     if (normalized.startsWith("zh")) return "zh-CN";
     if (normalized.startsWith("ja")) return "ja-JP";
+    if (normalized.startsWith("ko")) return "ko-KR";
     return normalized;
   }, []);
 

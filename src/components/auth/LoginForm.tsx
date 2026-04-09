@@ -1,8 +1,6 @@
 import { useLoading } from "@/context/LoadingContext";
 import { useLogin } from "@/hooks/auth/auth";
-import { handleGoogleLogin } from "@/services/other";
-import { GoogleOutlined } from "@ant-design/icons";
-import { Alert, Button, Checkbox, Divider, Form, Input } from "antd";
+import { Alert, Button, Checkbox, Form, Input } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 type FieldType = {
@@ -24,22 +22,6 @@ const primaryButtonStyle = {
   padding: "12px",
   fontSize: "16px",
   fontWeight: 500,
-  height: "auto", // Allow padding to determine height
-};
-
-// Custom style for the Google button
-export const googleButtonStyle = {
-  width: "100%",
-  padding: "12px",
-  fontSize: "16px",
-  fontWeight: 700,
-  color: "#808080",
-  border: "1px solid #d9d9d9",
-  borderRadius: "6px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  backgroundColor: "#fff",
   height: "auto", // Allow padding to determine height
 };
 
@@ -149,18 +131,6 @@ export default function LoginForm() {
           </Button>
         </Form.Item>
       </Form>
-
-      <Divider style={{ margin: "24px 0" }}>Hoặc đăng nhập với</Divider>
-      <Button
-        onClick={handleGoogleLogin}
-        size="large"
-        style={googleButtonStyle}
-      >
-        <GoogleOutlined
-          style={{ fontSize: "18px", marginRight: "8px", color: "#DB4437" }}
-        />
-        Tiếp tục với Google
-      </Button>
 
       <div
         style={{

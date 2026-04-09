@@ -1,130 +1,63 @@
 import type {
   StallContentCreateRequest,
-  StallContentListResponse,
   StallContentResponse,
   StallContentUpdateRequest,
-  StallWithoutContentListResponse,
   StallWithoutContentResponse,
 } from "@/dto/stall-content.dto";
 import { API_ENDPOINTS } from "@/services/api-route";
 import rootApiService from "@/services/api.service";
+import type { ApiResponse } from "@/services/type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-type LanguageListResponse = {
-  data: string[];
-  total?: number;
-};
-
-type RawStallContentRecord = Record<string, unknown>;
-
-const getFirstString = (source: RawStallContentRecord, keys: string[]) => {
-  for (const key of keys) {
-    const value = source[key];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  return "";
-};
-
-const normalizeStallContent = (
-  item: StallContentResponse | RawStallContentRecord,
-) => {
-  const source = item as RawStallContentRecord;
-  const normalizedId = getFirstString(source, [
-    "id",
-    "contentId",
-    "content_id",
-    "stallContentId",
-    "stall_content_id",
-  ]);
-
-  return {
-    ...source,
-    id: normalizedId,
-    stall_id: getFirstString(source, ["stall_id", "stallId"]),
-    stall_name: getFirstString(source, ["stall_name", "stallName"]),
-    language_code: getFirstString(source, ["language_code", "languageCode"]),
-    title: getFirstString(source, ["title"]),
-    description: getFirstString(source, ["description"]),
-    audio_url: getFirstString(source, ["audio_url", "audioUrl", "url"]),
-    tts_script: getFirstString(source, ["tts_script", "ttsScript"]),
-    version: source.version as number | undefined,
-    is_deleted: Boolean(source.is_deleted ?? source.isDeleted),
-    created_at: source.created_at as number,
-    updated_at: source.updated_at as number | undefined,
-    audio_duration: source.audio_duration as number | undefined,
-    audio_file_size: source.audio_file_size as number | undefined,
-  } as StallContentResponse;
-};
-
-const ensureArray = <T>(payload: T[] | { data?: T[] } | undefined | null) => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  return Array.isArray(payload?.data) ? payload.data : [];
-};
 
 export const useStallContents = () => {
   return useQuery<StallContentResponse[]>({
-    queryKey: ["stall-contents"],
+    queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
     queryFn: async () => {
-      const res = await rootApiService.get<
-        StallContentResponse[] | StallContentListResponse
-      >(API_ENDPOINTS.OWNER.STALL_CONTENT.LIST());
+      const res = await rootApiService.get<ApiResponse<StallContentResponse[]>>(
+        API_ENDPOINTS.OWNER.STALL_CONTENT.LIST,
+      );
 
-      return ensureArray(res).map((item) => normalizeStallContent(item));
+      return res.data;
     },
   });
 };
 
 export const useAvailableStallsWithoutContent = () => {
   return useQuery<StallWithoutContentResponse[]>({
-    queryKey: ["stall-contents", "available-stalls"],
+    queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
     queryFn: async () => {
       const res = await rootApiService.get<
-        StallWithoutContentResponse[] | StallWithoutContentListResponse
-      >(API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS());
+        ApiResponse<StallWithoutContentResponse[]>
+      >(API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS);
 
-      return ensureArray(res);
+      return res.data;
     },
   });
 };
 
-export const useAvailableLanguagesByStall = (stallId?: string) => {
+export const useAvailableLanguagesByStall = (stallId: string) => {
   return useQuery<string[]>({
-    queryKey: ["stall-contents", "available-languages", stallId],
+    queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_LANGUAGES(stallId)],
     enabled: Boolean(stallId),
     queryFn: async () => {
-      if (!stallId) {
-        return [];
-      }
-
-      const res = await rootApiService.get<string[] | LanguageListResponse>(
+      const res = await rootApiService.get<ApiResponse<string[]>>(
         API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_LANGUAGES(stallId),
       );
-
-      return ensureArray(res);
+      return res.data;
     },
   });
 };
 
-export const useStallContentDetail = (stallId?: string, contentId?: string) => {
+export const useStallContentDetail = (stallId: string, contentId: string) => {
   return useQuery<StallContentResponse | null>({
-    queryKey: ["stall-contents", "detail", stallId, contentId],
+    queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.DETAIL(stallId, contentId)],
     enabled: Boolean(stallId && contentId),
     queryFn: async () => {
-      if (!stallId || !contentId) {
-        return null;
-      }
-
-      const res = await rootApiService.get<StallContentResponse>(
+      const res = await rootApiService.get<ApiResponse<StallContentResponse>>(
         API_ENDPOINTS.OWNER.STALL_CONTENT.DETAIL(stallId, contentId),
       );
 
-      return normalizeStallContent(res);
+      return res.data;
     },
   });
 };
@@ -139,12 +72,17 @@ export const useCreateStallContent = () => {
       stallId: string;
       payload: StallContentCreateRequest;
     }) =>
-      rootApiService.post<StallContentResponse>(
-        API_ENDPOINTS.OWNER.STALL_CONTENT.CREATE(),
+      rootApiService.post<ApiResponse<StallContentResponse>>(
+        API_ENDPOINTS.OWNER.STALL_CONTENT.CREATE,
         payload,
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["stall-contents"] });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
+      });
     },
   });
 };
@@ -162,12 +100,17 @@ export const useUpdateStallContent = () => {
       contentId: string;
       payload: StallContentUpdateRequest;
     }) =>
-      rootApiService.put<StallContentResponse>(
+      rootApiService.put<ApiResponse<StallContentResponse>>(
         API_ENDPOINTS.OWNER.STALL_CONTENT.UPDATE(stallId, contentId),
         payload,
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["stall-contents"] });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
+      });
     },
   });
 };
@@ -183,11 +126,16 @@ export const useDeleteStallContent = () => {
       stallId: string;
       contentId: string;
     }) =>
-      rootApiService.delete(
+      rootApiService.delete<ApiResponse<unknown>>(
         API_ENDPOINTS.OWNER.STALL_CONTENT.DELETE(stallId, contentId),
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["stall-contents"] });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
+      });
     },
   });
 };
@@ -205,12 +153,14 @@ export const useToggleStallContentActive = () => {
       contentId: string;
       isDeleted: boolean;
     }) =>
-      rootApiService.patch<StallContentResponse>(
+      rootApiService.patch<ApiResponse<StallContentResponse>>(
         API_ENDPOINTS.OWNER.STALL_CONTENT.TOGGLE(stallId, contentId),
         { is_deleted: isDeleted ? "true" : "false" },
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["stall-contents"] });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
     },
   });
 };
@@ -224,7 +174,7 @@ export const useListenStallContentByLanguage = () => {
       stallId: string;
       languageCode: string;
     }) =>
-      rootApiService.get(
+      rootApiService.get<ApiResponse<unknown>>(
         API_ENDPOINTS.OWNER.STALL_CONTENT.BY_LANGUAGE(stallId, languageCode),
       ),
   });

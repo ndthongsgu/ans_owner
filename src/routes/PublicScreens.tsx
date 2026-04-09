@@ -14,7 +14,6 @@ const ForgotPasswordScreen = lazy(
 const ResetPasswordScreen = lazy(
   () => import("../pages/auth/ResetPasswordPage"),
 );
-const OAuthCallbackPage = lazy(() => import("@/pages/auth/OAuthCallbackPage"));
 
 export const PUBLIC_SCREENS = {
   [PUBLIC_ROUTES.HOME]: <HomeScreen />,
@@ -24,5 +23,4 @@ export const PUBLIC_SCREENS = {
   [PUBLIC_ROUTES.REGISTER]: <RegisterPage />,
   [PUBLIC_ROUTES.FORGOT_PASSWORD]: <ForgotPasswordScreen />,
   [PUBLIC_ROUTES.RESET_PASSWORD]: <ResetPasswordScreen />,
-  [PUBLIC_ROUTES.OAUTH_CALLBACK]: <OAuthCallbackPage />,
 };

@@ -4,6 +4,7 @@ export const REQUIRE_AUTH_ROUTES = {
   OWNER_STALL: "/owner/stall",
   OWNER_STALL_CONTENT: "/owner/stall-content",
   OWNER_SUBSCRIPTION_PACKAGE: "/owner/subscription-package",
+  OWNER_SUBSCRIPTION_RETURN: "/owner/subscription-packages/return",
   OWNER_ANALYTICS_INTERACTION: "/owner/analytics-interaction",
   CHANGE_PASSWORD: "/change-password",
 };
@@ -15,7 +16,6 @@ export const PUBLIC_ROUTES = {
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
   RESET_PASSWORD: "/reset-password",
-  OAUTH_CALLBACK: "/oauth/callback",
   ABOUT: "/about",
   CONTACT: "/contact",
 };

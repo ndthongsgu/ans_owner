@@ -1,10 +1,4 @@
 import {
-  useStalls,
-  useCreateStall,
-  useUpdateStall,
-  useDeleteStall,
-} from "@/hooks/stall/index";
-import {
   AppstoreAddOutlined,
   DeleteOutlined,
   EditOutlined,
@@ -31,11 +25,19 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_NEW_COVER_IMAGE } from "@/constants/stall.constants";
 import type { StallResponse } from "@/dto/stall.dto";
+import { useLoading } from "@/context/LoadingContext";
 import { useToast } from "@/hooks/layout/useToast";
 import { reverseGeocode } from "@/services/location.service";
 import { API_ROUTES } from "@/services/api-route";
 import { formatCoordinates, normalizeCoordinate } from "@/utils/location.utils";
 import { hourValueToString } from "@/utils/stall.utils";
+import {
+  useStalls,
+  useCreateStall,
+  useUpdateStall,
+  useDeleteStall,
+  useStallLimit,
+} from "@/hooks/stall/index";
 import StallAddModal, { type StallAddFormValues } from "./add";
 import StallEditModal, { type StallEditSubmitValues } from "./edit/index";
 import StallDetail from "./detail";
@@ -43,7 +45,9 @@ import "./index.css";
 
 export default function StallPage() {
   const showToast = useToast();
+  const { showLoading, hideLoading } = useLoading();
   const { data: stalls = [], isLoading } = useStalls();
+  const { data: stallLimit, isLoading: isLoadingLimit } = useStallLimit();
   const createStallMutation = useCreateStall();
   const updateStallMutation = useUpdateStall();
   const deleteStallMutation = useDeleteStall();
@@ -373,7 +377,39 @@ export default function StallPage() {
     ];
   }, [stalls]);
 
+  const currentStalls = stallLimit?.current_stalls ?? stalls.length;
+  const maxStalls = stallLimit?.max_stalls;
+  const remainingStalls = stallLimit?.remaining_stalls ?? null;
+  const hasStallLimit =
+    typeof maxStalls === "number" &&
+    Number.isFinite(maxStalls) &&
+    maxStalls > 0;
+  const reachedStallLimit =
+    hasStallLimit &&
+    (typeof remainingStalls === "number"
+      ? remainingStalls <= 0
+      : currentStalls >= maxStalls);
+
   const handleOpenAddStallModal = () => {
+    if (isLoadingLimit) {
+      showToast({
+        type: "info",
+        title: "Đang kiểm tra giới hạn quán",
+        message:
+          "Hệ thống đang tải số lượng quán khả dụng theo gói hiện tại. Vui lòng thử lại sau vài giây.",
+      });
+      return;
+    }
+
+    if (reachedStallLimit) {
+      showToast({
+        type: "warning",
+        title: "Đã đạt giới hạn quán",
+        message: `Gói hiện tại cho phép tối đa ${maxStalls} quán. Bạn đang có ${currentStalls} quán và còn ${remainingStalls ?? 0} lượt thêm. Vui lòng nâng cấp gói để thêm quán mới.`,
+      });
+      return;
+    }
+
     setIsAddStallModalOpen(true);
   };
 
@@ -387,13 +423,18 @@ export default function StallPage() {
       const payloadValues = { ...values };
       delete payloadValues.location;
 
-      await createStallMutation.mutateAsync({
-        ...payloadValues,
-        ...coordinates,
-        opening_hours: operatingHours.opening_hours,
-        close_hours: operatingHours.close_hours,
-        cover_image: values.cover_image,
-      });
+      showLoading();
+      try {
+        await createStallMutation.mutateAsync({
+          ...payloadValues,
+          ...coordinates,
+          opening_hours: operatingHours.opening_hours,
+          close_hours: operatingHours.close_hours,
+          cover_image: values.cover_image,
+        });
+      } finally {
+        hideLoading();
+      }
       setCurrentPage(1);
       closeAddStallModal();
       showToast({
@@ -484,12 +525,12 @@ export default function StallPage() {
     },
     {
       title: "Tên quán",
-      dataIndex: "name",
-      key: "name",
+      dataIndex: "stall_name",
+      key: "stall_name",
       width: 180,
-      render: (name: string) => (
+      render: (stall_name: string) => (
         <Space direction="vertical" size={2}>
-          <Typography.Text strong>{name}</Typography.Text>
+          <Typography.Text strong>{stall_name}</Typography.Text>
         </Space>
       ),
     },
@@ -561,13 +602,25 @@ export default function StallPage() {
       <Card
         title="Quản lý quán ăn"
         extra={
-          <Button
-            type="primary"
-            icon={<AppstoreAddOutlined />}
-            onClick={handleOpenAddStallModal}
-          >
-            Thêm quán mới
-          </Button>
+          <Space>
+            {hasStallLimit ? (
+              <Typography.Text
+                type={reachedStallLimit ? "danger" : "secondary"}
+              >
+                Đã dùng {currentStalls}/{maxStalls} quán, còn{" "}
+                {remainingStalls ?? 0} quán
+              </Typography.Text>
+            ) : null}
+            <Button
+              type={reachedStallLimit ? "default" : "primary"}
+              danger={reachedStallLimit}
+              disabled={reachedStallLimit}
+              icon={<AppstoreAddOutlined />}
+              onClick={handleOpenAddStallModal}
+            >
+              Thêm quán mới
+            </Button>
+          </Space>
         }
       />
 

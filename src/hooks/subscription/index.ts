@@ -1,200 +1,112 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import rootApiService from "@/services/api.service";
 import { API_ENDPOINTS } from "@/services/api-route";
+import type { ApiResponse } from "@/services/type";
 import type {
-  PackageDto,
   MySubscriptionDto,
-  VnpayCreatePaymentRequestDto,
+  PackageDto,
   VnpayPaymentSessionDto,
-  VnpayPaymentStatusDto,
 } from "@/dto/subscription.dto";
 
-const unwrapResponseData = <T>(payload: unknown): T => {
-  if (
-    payload &&
+const isApiResponse = <T>(payload: unknown): payload is ApiResponse<T> => {
+  return (
     typeof payload === "object" &&
+    payload !== null &&
     "data" in payload &&
-    (payload as { data?: unknown }).data !== undefined
-  ) {
-    return (payload as { data: T }).data;
-  }
-
-  return payload as T;
+    "success" in payload
+  );
 };
 
-const normalizePaymentSession = (payload: unknown): VnpayPaymentSessionDto => {
-  const source = unwrapResponseData<Record<string, unknown>>(payload);
+const extractPayload = <T>(payload: T | ApiResponse<T>): T => {
+  return isApiResponse<T>(payload) ? payload.data : payload;
+};
+
+const normalizeRegisterSession = (payload: unknown): VnpayPaymentSessionDto => {
+  const source = extractPayload(
+    payload as ApiResponse<Record<string, unknown>> | Record<string, unknown>,
+  );
   const transaction =
     source.transaction && typeof source.transaction === "object"
       ? (source.transaction as Record<string, unknown>)
       : {};
 
+  const orderId =
+    (transaction.order_id as string) ||
+    (source.order_id as string) ||
+    (transaction.orderId as string) ||
+    (source.orderId as string) ||
+    "";
+
   return {
-    orderId:
-      (source.orderId as string) ||
-      (source.order_id as string) ||
-      (source.requestId as string) ||
-      (transaction.order_id as string) ||
-      (transaction.orderId as string) ||
-      (transaction.request_id as string) ||
-      (transaction.requestId as string) ||
-      "",
-    amount: Number(source.amount || transaction.amount || 0) || undefined,
-    payUrl:
-      (source.payUrl as string) ||
-      (source.pay_url as string) ||
+    orderId,
+    order_id: orderId || undefined,
+    amount: Number(transaction.amount || source.amount || 0) || undefined,
+    payment_url:
+      (transaction.payment_url as string) ||
       (source.payment_url as string) ||
-      (transaction.payUrl as string) ||
-      (transaction.pay_url as string) ||
-      (transaction.payment_url as string),
-    deeplink:
-      (source.deeplink as string) ||
-      (source.deepLink as string) ||
-      (source.qr_code_url as string) ||
-      (transaction.deeplink as string) ||
-      (transaction.deepLink as string) ||
-      (transaction.qr_code_url as string),
-    qrCodeUrl:
-      (source.qrCodeUrl as string) ||
-      (source.qrCodeURL as string) ||
-      (source.qrUrl as string) ||
+      (transaction.paymentUrl as string) ||
+      (source.paymentUrl as string) ||
+      undefined,
+    qr_code_url:
+      (transaction.qr_code_url as string) ||
       (source.qr_code_url as string) ||
       (transaction.qrCodeUrl as string) ||
-      (transaction.qrCodeURL as string) ||
-      (transaction.qrUrl as string) ||
-      (transaction.qr_code_url as string),
+      (source.qrCodeUrl as string) ||
+      undefined,
     status:
-      (source.status as string) ||
-      (source.resultCode as string) ||
       (transaction.payment_status as string) ||
-      (transaction.status as string),
-    message:
-      (source.message as string) ||
-      (source.localMessage as string) ||
-      (source.error as string),
-  };
-};
-
-const normalizePaymentStatus = (payload: unknown): VnpayPaymentStatusDto => {
-  const source = unwrapResponseData<Record<string, unknown>>(payload);
-  const status = (
-    (source.status as string) ||
-    (source.resultCode as string) ||
-    "pending"
-  )
-    .toString()
-    .toLowerCase();
-  const paid =
-    Boolean(source.paid) ||
-    ["success", "paid", "completed", "00", "0"].includes(status);
-
-  return {
-    orderId:
-      (source.orderId as string) ||
-      (source.order_id as string) ||
-      (source.requestId as string) ||
-      "",
-    status,
-    paid,
-    message: (source.message as string) || (source.localMessage as string),
-  };
-};
-
-const ensureArray = <T>(payload: unknown): T[] => {
-  if (Array.isArray(payload)) {
-    return payload as T[];
-  }
-
-  if (payload && typeof payload === "object") {
-    const source = payload as { data?: unknown };
-    if (Array.isArray(source.data)) {
-      return source.data as T[];
-    }
-  }
-
-  return [];
-};
-
-const normalizePackage = (payload: unknown): PackageDto => {
-  const source =
-    payload && typeof payload === "object"
-      ? (payload as Record<string, unknown>)
-      : {};
-
-  return {
-    id: String(source.id || source.packageId || source.package_id || ""),
-    code: String(source.code || ""),
-    name: String(source.name || ""),
-    price: Number(source.price || 0),
-    max_stalls: Number(source.max_stalls || source.maxStalls || 0),
-    description:
-      typeof source.description === "string" ? source.description : undefined,
-    is_deleted:
-      typeof source.is_deleted === "boolean"
-        ? source.is_deleted
-        : typeof source.isDeleted === "boolean"
-          ? source.isDeleted
-          : undefined,
-    created_at:
-      typeof source.created_at === "string"
-        ? source.created_at
-        : typeof source.createdAt === "string"
-          ? source.createdAt
-          : undefined,
-    updated_at:
-      typeof source.updated_at === "string"
-        ? source.updated_at
-        : typeof source.updatedAt === "string"
-          ? source.updatedAt
-          : undefined,
+      (source.payment_status as string) ||
+      (transaction.status as string) ||
+      (source.status as string) ||
+      undefined,
+    message: (source.message as string) || undefined,
   };
 };
 
 const normalizeMySubscription = (payload: unknown): MySubscriptionDto => {
-  const source = unwrapResponseData<Record<string, unknown>>(payload);
-  const detail =
-    source.subscription && typeof source.subscription === "object"
-      ? (source.subscription as Record<string, unknown>)
-      : source;
-  const packageInfo =
-    detail.package && typeof detail.package === "object"
-      ? (detail.package as Record<string, unknown>)
-      : {};
+  const source = extractPayload(
+    payload as ApiResponse<Record<string, unknown>> | Record<string, unknown>,
+  );
 
-  const packageId = String(
-    detail.packageId ||
-      detail.package_id ||
-      detail.subscription_package_id ||
-      packageInfo.id ||
-      packageInfo.package_id ||
-      "",
-  );
-  const packageName = String(
-    detail.packageName || detail.package_name || packageInfo.name || "",
-  );
-  const activeValue =
-    detail.active ?? detail.is_active ?? source.active ?? source.is_active;
-  const isActive =
-    typeof activeValue === "boolean"
-      ? activeValue
-      : String(activeValue || "").toLowerCase() === "true";
-  const expiresAtValue =
-    (detail.expiresAt as string) ||
-    (detail.expires_at as string) ||
-    (detail.expired_at as string) ||
-    (detail.end_date as string) ||
+  const packageData =
+    source.package && typeof source.package === "object"
+      ? (source.package as PackageDto)
+      : undefined;
+
+  const subscriptionPackageId =
+    (source.subscription_package_id as string) ||
+    (source.packageId as string) ||
+    packageData?.id;
+
+  const rawExpiresAt =
+    (source.subscription_expires_at as number) ||
+    (source.expiresAt as number | string) ||
     undefined;
-  const expiresAtTime = expiresAtValue
-    ? new Date(expiresAtValue).getTime()
-    : Number.NaN;
-  const hasFutureExpiry =
-    Number.isFinite(expiresAtTime) && expiresAtTime > Date.now();
+
+  const active = Boolean(
+    source.is_active ??
+    source.active ??
+    (source.remaining_seconds && Number(source.remaining_seconds) > 0),
+  );
 
   return {
-    packageId: packageId || undefined,
-    packageName: packageName || undefined,
-    expiresAt: expiresAtValue,
-    active: isActive || hasFutureExpiry,
+    owner_id: (source.owner_id as string) || undefined,
+    subscription_package_id: subscriptionPackageId,
+    is_active: Boolean(source.is_active ?? active),
+    subscription_start_at:
+      (source.subscription_start_at as number) || undefined,
+    subscription_expires_at:
+      (source.subscription_expires_at as number) || undefined,
+    remaining_seconds: (source.remaining_seconds as number) || undefined,
+    package: packageData,
+    packageId: subscriptionPackageId,
+    packageName:
+      packageData?.name ||
+      (source.packageName as string) ||
+      (source.package_name as string) ||
+      undefined,
+    expiresAt: rawExpiresAt,
+    active,
   };
 };
 
@@ -202,13 +114,10 @@ export const useListPackages = () => {
   return useQuery<PackageDto[]>({
     queryKey: [API_ENDPOINTS.SUBSCRIPTION.LIST],
     queryFn: async () => {
-      const response = await rootApiService.get<unknown>(
+      const res = await rootApiService.get<ApiResponse<PackageDto[]>>(
         API_ENDPOINTS.SUBSCRIPTION.LIST,
       );
-
-      return ensureArray<PackageDto>(unwrapResponseData(response)).map(
-        normalizePackage,
-      );
+      return res.data || [];
     },
   });
 };
@@ -217,11 +126,10 @@ export const useMySubscription = () => {
   return useQuery<MySubscriptionDto>({
     queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY],
     queryFn: async () => {
-      const response = await rootApiService.get<unknown>(
+      const res = await rootApiService.get<ApiResponse<unknown>>(
         API_ENDPOINTS.SUBSCRIPTION.MY,
       );
-
-      return normalizeMySubscription(response);
+      return normalizeMySubscription(res);
     },
   });
 };
@@ -231,20 +139,17 @@ export const useRegisterPackage = () => {
 
   return useMutation({
     mutationFn: async (packageId: string) => {
-      const response = await rootApiService.post(
+      const res = await rootApiService.post<ApiResponse<unknown>>(
         API_ENDPOINTS.SUBSCRIPTION.REGISTER,
         {
           subscription_package_id: packageId,
-          note: "",
           payment_method: "vnpay",
-          method: "vnpay",
         },
       );
 
-      return normalizePaymentSession(response);
+      return normalizeRegisterSession(res);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.ME] });
       queryClient.invalidateQueries({
         queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY],
       });
@@ -252,12 +157,10 @@ export const useRegisterPackage = () => {
   });
 };
 
-export const usePurchasePackage = useRegisterPackage;
-
 export const useCreateVnpayPaymentSession = () => {
   return useMutation({
-    mutationFn: async (payload: VnpayCreatePaymentRequestDto) => {
-      const response = await rootApiService.post(
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const res = await rootApiService.post<ApiResponse<unknown>>(
         API_ENDPOINTS.PAYMENTS.VNPAY_CREATE,
         {
           ...payload,
@@ -265,29 +168,7 @@ export const useCreateVnpayPaymentSession = () => {
         },
       );
 
-      return normalizePaymentSession(response);
-    },
-  });
-};
-
-export const useCheckVnpayPaymentStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (orderId: string) => {
-      const response = await rootApiService.get(
-        API_ENDPOINTS.PAYMENTS.VNPAY_STATUS(orderId),
-      );
-
-      return normalizePaymentStatus(response);
-    },
-    onSuccess: (status) => {
-      if (status.paid) {
-        queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.ME] });
-        queryClient.invalidateQueries({
-          queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY],
-        });
-      }
+      return normalizeRegisterSession(res);
     },
   });
 };

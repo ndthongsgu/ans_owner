@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { ENFlag, VNFlag } from "../assets/icons";
 import { PUBLIC_ROUTES, REQUIRE_AUTH_ROUTES } from "../routes/routes";
+import "./AppHeader.css";
 
 type RoleAwareProfile =
   | {
@@ -244,6 +245,7 @@ export default function AppHeader() {
             menu={isAuthenticated ? userMenu : guestMenu}
             placement="bottomRight"
             trigger={["click"]}
+            overlayClassName="header-user-menu"
           >
             <Avatar
               icon={!isAuthenticated ? <UserOutlined /> : undefined}

@@ -22,9 +22,7 @@ import {
   type TableColumnsType,
 } from "antd";
 import { useMemo, useState } from "react";
-import dayjs from "dayjs";
 import type {
-  LanguageCode,
   StallContentCreateRequest,
   StallContentResponse,
   StallContentUpdateRequest,
@@ -35,6 +33,7 @@ import { useToast } from "@/hooks/layout/useToast";
 import { useLoading } from "@/context/LoadingContext";
 import {
   useStallContents,
+  useAvailableStallsWithoutContent,
   useCreateStallContent,
   useUpdateStallContent,
   useDeleteStallContent,
@@ -43,6 +42,7 @@ import StallContentAddModal from "./add";
 import StallContentDetail from "./detail";
 import StallContentEditModal from "./edit";
 import { LANGUAGE_LABELS } from "@/utils/language.utils";
+import { formatUnixTimestamp } from "@/utils/date.utils";
 import "./index.css";
 
 export default function StallContentPage() {
@@ -64,62 +64,202 @@ export default function StallContentPage() {
   const [viewingItem, setViewingItem] = useState<StallContentResponse | null>(null);
   const [selectedPlaybackLanguage, setSelectedPlaybackLanguage] = useState<string | undefined>(undefined);
 
-  const { data: stallContents = [], isLoading: isStallContentsLoading } = useStallContents();
+  const { data: stallContents = [], isLoading: isStallContentsLoading } =
+    useStallContents();
 
-  // 1. Tối ưu hóa việc lấy Stall Name: API đã trả về stall_name, chỉ fallback nếu thiếu
-  const enrichedStallContents = useMemo(() => {
-    return stallContents.map((content) => ({
-      ...content,
-      display_stall_name: content.stall_name || stalls.find(s => s.id === content.stall_id)?.name || content.stall_id,
-    }));
-  }, [stallContents, stalls]);
+  const { data: availableStalls = [], refetch: refetchAvailableStalls } =
+    useAvailableStallsWithoutContent();
+
+  const stallOptions = useMemo(
+    () =>
+      availableStalls.map((stall) => ({
+        label: stall.stall_name,
+        value: stall.id,
+      })),
+    [availableStalls],
+  );
 
   const createMutation = useCreateStallContent();
   const updateMutation = useUpdateStallContent();
   const deleteMutation = useDeleteStallContent();
 
-  const stallOptions = useMemo(
-    () => stalls.map((stall) => ({ label: stall.name || stall.id, value: stall.id })),
-    [stalls]
-  );
-
   const languageOptions = useMemo(() => {
-    const languages = ["vi", "en", "zh", "ja"];
+    const languages = ["vi", "en", "zh", "ja", "ko"];
     return languages.map((code) => ({
       value: code,
       label: LANGUAGE_LABELS[code.toLowerCase()] || code.toUpperCase(),
     }));
   }, []);
 
-  // Handlers
-  const openAddModal = () => {
-    if (!stalls.length) {
-      showToast({ type: "warning", title: "Cảnh báo", message: "Không tìm thấy danh sách quán" });
-      return;
+  const openAddModal = async () => {
+    try {
+      const { data: availableStalls = [] } = await refetchAvailableStalls();
+
+      const usedStallIds = new Set(
+        stallContents.map((item) => item.id).filter(Boolean),
+      );
+
+      const nextOptions = availableStalls
+        .filter((stall) => !usedStallIds.has(stall.id))
+        .map((stall) => ({
+          label: stall.stall_name,
+          value: stall.id,
+        }));
+
+      if (!nextOptions.length) {
+        showToast({
+          type: "warning",
+          title: "Không còn quán khả dụng",
+          message:
+            "Tất cả quán đã có nội dung trong hệ thống hoặc chưa có quán khả dụng.",
+        });
+        return;
+      }
+
+      setIsAddModalOpen(true);
+    } catch {
+      showToast({
+        type: "error",
+        title: "Lỗi tải dữ liệu",
+        message: "Không thể lấy danh sách quán khả dụng. Vui lòng thử lại.",
+      });
     }
-    addForm.setFieldsValue({ stall_id: stalls[0]?.id, tts_script: "" });
-    setIsAddModalOpen(true);
   };
 
   const handleCreate = async () => {
     try {
       const values = await addForm.validateFields();
-      await createMutation.mutateAsync({
-        stallId: values.stall_id,
-        payload: { ...values, language_code: "vi" }
-      });
+      const selectedStallId = values.stall_id?.trim();
+
+      if (!selectedStallId) {
+        showToast({
+          type: "warning",
+          title: "Thiếu thông tin",
+          message: "Vui lòng chọn quán trước khi tạo nội dung",
+        });
+        return;
+      }
+
+      const isSelectableStall = stallOptions.some(
+        (option) => option.value === selectedStallId,
+      );
+      if (!isSelectableStall) {
+        showToast({
+          type: "warning",
+          title: "Quán không hợp lệ",
+          message:
+            "Quán này đã có nội dung hoặc không còn trong danh sách khả dụng",
+        });
+        return;
+      }
+
+      const hasExistingContent = stallContents.some(
+        (item) => item.stall_id === selectedStallId,
+      );
+      if (hasExistingContent) {
+        showToast({
+          type: "warning",
+          title: "Quán đã có nội dung",
+          message: "Vui lòng chọn quán khác để tạo nội dung mới",
+        });
+        return;
+      }
+
+      const payload: StallContentCreateRequest = {
+        stall_id: selectedStallId,
+        stall_name:
+          stallOptions.find((option) => option.value === selectedStallId)
+            ?.label ||
+          stalls.find((item) => item.id === selectedStallId)?.stall_name ||
+          selectedStallId,
+        tts_script: values.tts_script.trim(),
+      };
+
+      showLoading();
+      try {
+        await createMutation.mutateAsync({
+          stallId: selectedStallId,
+          payload,
+        });
+      } finally {
+        hideLoading();
+      }
+
       setIsAddModalOpen(false);
       addForm.resetFields();
-      showToast({ type: "success", title: "Thành công", message: "Đã thêm nội dung" });
-    } catch (err) {
-      console.error(err);
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Đã thêm nội dung thuyết minh",
+      });
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "errorFields" in error &&
+        Array.isArray((error as { errorFields?: unknown[] }).errorFields)
+      ) {
+        showToast({
+          type: "warning",
+          title: "Thiếu thông tin",
+          message: "Vui lòng nhập đầy đủ thông tin trước khi lưu",
+        });
+        return;
+      }
+
+      showToast({
+        type: "error",
+        title: "Tạo thất bại",
+        message: "Không thể tạo nội dung thuyết minh. Vui lòng thử lại.",
+      });
     }
+  };
+
+  const openEditModal = (data: StallContentResponse) => {
+    editForm.setFieldsValue({
+      id: data?.id,
+      stall_name: data.stall_name,
+      tts_script: data.tts_script,
+    });
+
+    setEditingItem(data);
+    setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (!editingItem) return;
     try {
       const values = await editForm.validateFields();
+
+      const contentId = values.id || editingItem.id;
+      const stallId = values.stall_id || editingItem.stall_id;
+
+      if (!stallId) {
+        showToast({
+          type: "error",
+          title: "Thiếu stallId",
+          message:
+            "Backend chưa trả về stallId hợp lệ cho bản ghi nên không thể cập nhật",
+        });
+        return;
+      }
+
+      if (!contentId) {
+        showToast({
+          type: "error",
+          title: "Thiếu contentId",
+          message:
+            "Backend chưa trả về contentId/id hợp lệ cho bản ghi nên không thể cập nhật",
+        });
+        return;
+      }
+
+      const payload: StallContentUpdateRequest = {
+        stall_id: stallId,
+        stall_name: values.stall_name.trim(),
+        tts_script: values.tts_script.trim(),
+      };
+
       showLoading();
       await updateMutation.mutateAsync({
         stallId: editingItem.stall_id,
@@ -140,8 +280,38 @@ export default function StallContentPage() {
 
   const handleDelete = async (item: StallContentResponse) => {
     try {
-      await deleteMutation.mutateAsync({ stallId: item.stall_id, contentId: item.id });
-      showToast({ type: "success", title: "Đã xóa", message: "Nội dung đã được loại bỏ" });
+      const contentId = item.id;
+      const stallId = item.stall_id;
+
+      if (!contentId) {
+        showToast({
+          type: "error",
+          title: "Thiếu contentId",
+          message:
+            "Backend chưa trả về contentId/id hợp lệ cho bản ghi nên không thể xóa",
+        });
+        return;
+      }
+
+      if (!stallId) {
+        showToast({
+          type: "error",
+          title: "Thiếu stallId",
+          message:
+            "Backend chưa trả về stallId hợp lệ cho bản ghi nên không thể xóa",
+        });
+        return;
+      }
+
+      await deleteMutation.mutateAsync({
+        stallId,
+        contentId,
+      });
+      showToast({
+        type: "success",
+        title: "Đã xóa",
+        message: "Nội dung thuyết minh đã được xóa",
+      });
     } catch {
       showToast({ type: "error", title: "Thất bại", message: "Không thể xóa" });
     }
@@ -155,7 +325,14 @@ export default function StallContentPage() {
     );
   }, [keyword, enrichedStallContents]);
 
-  const columns: TableColumnsType<StallContentResponse & { display_stall_name: string }> = [
+    return stallContents.filter((item) => {
+      const searchable =
+        `${item.stall_name || ""} ${item.tts_script || ""}`.toLowerCase();
+      return searchable.includes(kw);
+    });
+  }, [keyword, stallContents]);
+
+  const columns: TableColumnsType<StallContentResponse> = [
     {
       title: "Tên quán",
       dataIndex: "display_stall_name",
@@ -172,18 +349,11 @@ export default function StallContentPage() {
       render: (code) => <Tag color="blue">{LANGUAGE_LABELS[code] || code.toUpperCase()}</Tag>,
     },
     {
-      title: "Tiêu đề",
-      dataIndex: "title",
-      key: "title",
-      width: 200,
-      ellipsis: true,
-    },
-    {
-      title: "Audio",
-      dataIndex: "audio_url",
-      key: "audio_url",
-      width: 100,
-      render: (url) => url ? <a href={url} target="_blank">Nghe</a> : "-",
+      title: "Thời gian tạo",
+      dataIndex: "created_at",
+      key: "created_at",
+      width: 160,
+      render: (value: number | undefined) => formatUnixTimestamp(value),
     },
     {
       title: "Thời lượng",
@@ -204,8 +374,7 @@ export default function StallContentPage() {
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
-      // SỬA LỖI: API trả về giây (Unix), dayjs mặc định là miligiây
-      render: (val) => val ? dayjs.unix(val).format("HH:mm DD/MM/YYYY") : "-",
+      render: (value: number | undefined) => formatUnixTimestamp(value),
     },
     {
       title: "Thao tác",
@@ -273,7 +442,10 @@ export default function StallContentPage() {
       <StallContentAddModal
         open={isAddModalOpen}
         form={addForm}
-        onCancel={() => setIsAddModalOpen(false)}
+        onCancel={() => {
+          setIsAddModalOpen(false);
+          addForm.resetFields();
+        }}
         onCreate={handleCreate}
         stallOptions={stallOptions}
       />
@@ -281,8 +453,12 @@ export default function StallContentPage() {
       <StallContentEditModal
         open={isEditModalOpen}
         form={editForm}
-        stallId={editingItem?.stall_id || ""}
-        onCancel={() => setIsEditModalOpen(false)}
+        stallId={editingItem?.stall_id}
+        onCancel={() => {
+          setIsEditModalOpen(false);
+          setEditingItem(null);
+          editForm.resetFields();
+        }}
         onSave={handleSaveEdit}
       />
 
