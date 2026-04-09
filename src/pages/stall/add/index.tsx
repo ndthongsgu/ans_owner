@@ -467,7 +467,7 @@ export default function StallAddModal({
         <Row gutter={12}>
           <Col xs={24} sm={16}>
             <Form.Item
-              name="name"
+              name="stall_name"
               label="Tên quán"
               rules={[{ required: true, message: "Vui lòng nhập tên quán" }]}
             >

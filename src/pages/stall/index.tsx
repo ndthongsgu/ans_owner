@@ -28,7 +28,6 @@ import type { StallResponse } from "@/dto/stall.dto";
 import { useLoading } from "@/context/LoadingContext";
 import { useToast } from "@/hooks/layout/useToast";
 import { reverseGeocode } from "@/services/location.service";
-import { API_ROUTES } from "@/services/api-route";
 import { formatCoordinates, normalizeCoordinate } from "@/utils/location.utils";
 import { hourValueToString } from "@/utils/stall.utils";
 import {
@@ -41,6 +40,7 @@ import {
 import StallAddModal, { type StallAddFormValues } from "./add";
 import StallEditModal, { type StallEditSubmitValues } from "./edit/index";
 import StallDetail from "./detail";
+import { normalizeStallCoverImage } from "@/utils/stall.utils";
 import "./index.css";
 
 export default function StallPage() {
@@ -112,31 +112,7 @@ export default function StallPage() {
   );
 
   const getCoverImage = (stall: StallResponse) => {
-    const rawImage = (stall.cover_image || "").trim();
-    if (!rawImage) {
-      return DEFAULT_NEW_COVER_IMAGE;
-    }
-
-    if (
-      rawImage.startsWith("data:image/") ||
-      rawImage.startsWith("http://") ||
-      rawImage.startsWith("https://") ||
-      rawImage.startsWith("blob:")
-    ) {
-      return rawImage;
-    }
-
-    const looksLikeBase64 =
-      /^[A-Za-z0-9+/]+=*$/.test(rawImage) && rawImage.length > 100;
-    if (looksLikeBase64) {
-      return `data:image/jpeg;base64,${rawImage}`;
-    }
-
-    if (rawImage.startsWith("/")) {
-      return `${API_ROUTES.BASE_URL}${rawImage}`;
-    }
-
-    return `${API_ROUTES.BASE_URL}/${rawImage}`;
+    return normalizeStallCoverImage(stall.cover_image);
   };
 
   const getPriceRange = (stall: StallResponse) =>
@@ -267,7 +243,9 @@ export default function StallPage() {
       const category = stall.category || "";
       const price_range = getPriceRange(stall);
       const matchedKeyword =
-        !kw || stall.name.toLowerCase().includes(kw) || address.includes(kw);
+        !kw ||
+        stall.stall_name.toLowerCase().includes(kw) ||
+        address.includes(kw);
       const matchedCategory =
         filterCategory === "all" || category === filterCategory;
       const matchedPrice =
@@ -420,6 +398,7 @@ export default function StallPage() {
         values.opening_hours,
         values.close_hours,
       );
+      const normalizedPriceRange = String(values.price_range ?? "").trim();
       const payloadValues = { ...values };
       delete payloadValues.location;
 
@@ -431,6 +410,7 @@ export default function StallPage() {
           opening_hours: operatingHours.opening_hours,
           close_hours: operatingHours.close_hours,
           cover_image: values.cover_image,
+          price_range: normalizedPriceRange,
         });
       } finally {
         hideLoading();
@@ -466,6 +446,7 @@ export default function StallPage() {
         values.opening_hours,
         values.close_hours,
       );
+      const normalizedPriceRange = String(values.price_range ?? "").trim();
 
       await updateStallMutation.mutateAsync({
         ...values,
@@ -473,7 +454,7 @@ export default function StallPage() {
         opening_hours: operatingHours.opening_hours,
         close_hours: operatingHours.close_hours,
         cover_image: values.cover_image,
-        price_range: values.price_range,
+        price_range: normalizedPriceRange,
         id: editingStall.id,
       });
       closeEditStallModal();
@@ -517,7 +498,7 @@ export default function StallPage() {
         <Image
           src={getCoverImage(record)}
           fallback={DEFAULT_NEW_COVER_IMAGE}
-          alt={record.name}
+          alt={record.cover_image}
           className="stall-table-thumbnail"
           preview={false}
         />
@@ -612,6 +593,7 @@ export default function StallPage() {
               </Typography.Text>
             ) : null}
             <Button
+              size="large"
               type={reachedStallLimit ? "default" : "primary"}
               danger={reachedStallLimit}
               disabled={reachedStallLimit}
@@ -661,20 +643,6 @@ export default function StallPage() {
               }}
               suffixIcon={<FilterOutlined />}
             />
-          </Col>
-          <Col xs={24} md={2}>
-            <Button
-              block
-              size="large"
-              onClick={() => {
-                setKeyword("");
-                setFilterCategory("all");
-                setFilterPriceRange("all");
-                setCurrentPage(1);
-              }}
-            >
-              Reset
-            </Button>
           </Col>
         </Row>
       </Card>
