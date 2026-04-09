@@ -1,9 +1,4 @@
 import {
-  AppstoreAddOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  ReloadOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
 import {
@@ -15,12 +10,22 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Skeleton,
   Space,
   Table,
   Typography,
+  Tooltip,
   type TableColumnsType,
 } from "antd";
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Eye,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import type {
   StallContentCreateRequest,
   StallContentResponse,
@@ -40,6 +45,7 @@ import {
 import StallContentAddModal from "./add";
 import StallContentDetail from "./detail";
 import StallContentEditModal from "./edit";
+import StallContentMap from "@/components/stall-content/StallContentMap";
 import { LANGUAGE_LABELS } from "@/utils/language.utils";
 import { formatUnixTimestamp } from "@/utils/date.utils";
 import "./index.css";
@@ -395,135 +401,231 @@ export default function StallContentPage() {
     });
   }, [keyword, stallContents]);
 
+  const stallsWithContent = useMemo(() => {
+    const stallIds = new Set(stallContents.map((item) => item.stall_id));
+    return stalls.filter((stall) => stallIds.has(stall.id));
+  }, [stallContents, stalls]);
+
   const columns: TableColumnsType<StallContentResponse> = [
     {
       title: "Tên quán",
       dataIndex: "stall_name",
       key: "stall_name",
-      width: 120,
+      width: 150,
       render: (value: string) => (
-        <Typography.Text strong>{value}</Typography.Text>
+        <Tooltip title={value}>
+          <Typography.Text strong ellipsis>
+            {value}
+          </Typography.Text>
+        </Tooltip>
       ),
     },
     {
-      title: "Nội dung",
+      title: "Nội dung thuyết minh",
       dataIndex: "tts_script",
       key: "tts_script",
-      width: 380,
+      width: 300,
       render: (value: string) => (
-        <Typography.Text strong>{value}</Typography.Text>
+        <Tooltip title={value}>
+          <Typography.Text 
+            ellipsis
+            className="stall-content-summary-text"
+          >
+            {value}
+          </Typography.Text>
+        </Tooltip>
       ),
     },
     {
-      title: "Thời gian tạo",
+      title: "Tạo lúc",
       dataIndex: "created_at",
       key: "created_at",
-      width: 160,
-      render: (value: number | undefined) => formatUnixTimestamp(value),
+      width: 130,
+      responsive: ["xl"],
+      render: (value: number | undefined) => (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {formatUnixTimestamp(value)}
+        </Typography.Text>
+      ),
     },
     {
-      title: "Cập nhật lần cuối",
+      title: "Cập nhật",
       dataIndex: "updated_at",
       key: "updated_at",
-      width: 160,
-      render: (value: number | undefined) => formatUnixTimestamp(value),
+      width: 130,
+      responsive: ["xl"],
+      render: (value: number | undefined) => (
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {formatUnixTimestamp(value)}
+        </Typography.Text>
+      ),
     },
     {
       title: "Thao tác",
       key: "actions",
       width: 260,
+      fixed: "right",
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => openDetailModal(record)}
-          >
-            Xem
-          </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => openEditModal(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Xóa nội dung"
-            description="Bạn có chắc chắn muốn xóa nội dung này?"
-            okText="Xóa"
-            cancelText="Hủy"
-            onConfirm={() => handleDelete(record)}
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
+        <Space size="small" className="stall-content-action-buttons">
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              size="small"
+              className="stall-content-action-btn"
+              icon={<Eye size={16} />}
+              onClick={() => openDetailModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa">
+            <Button
+              type="text"
+              size="small"
+              className="stall-content-action-btn"
+              icon={<Pencil size={16} />}
+              onClick={() => openEditModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Popconfirm
+              title="Xóa nội dung"
+              description="Bạn có chắc chắn muốn xóa nội dung này?"
+              okText="Xóa"
+              okType="danger"
+              cancelText="Hủy"
+              onConfirm={() => handleDelete(record)}
+            >
+              <Button 
+                type="text" 
+                size="small"
+                className="stall-content-action-btn"
+                danger 
+                icon={<Trash2 size={16} />}
+              />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
   ];
+    
 
   return (
-    <Space
-      direction="vertical"
-      size="middle"
-      className="stall-content-page-wrap"
-    >
-      <Card
-        title="Quản lý nội dung thuyết minh"
-        extra={
-          <Space>
-            <Button
-              type="primary"
-              icon={<AppstoreAddOutlined />}
-              onClick={openAddModal}
-            >
-              Thêm nội dung
-            </Button>
-          </Space>
-        }
-      />
+    <div className="stall-content-page-wrap dashboard-theme-food">
+      <main className="dashboard-main-content">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="stall-content-header-card">
+            <div>
+              <h1 className="stall-content-header-title">
+                Quản lý nội dung thuyết minh
+              </h1>
+              <p className="stall-content-header-subtitle">
+                Bố cục gọn gàng, trực quan để thao tác nhanh và theo dõi dễ hơn.
+              </p>
+            </div>
+            <div className="stall-content-stats">
+              <div className="stall-content-stat-item">
+                <div className="stall-content-stat-label">Tổng nội dung</div>
+                <div className="stall-content-stat-value">{stallContents.length}</div>
+              </div>
+              <div className="stall-content-stat-item">
+                <div className="stall-content-stat-label">Quán được gán</div>
+                <div className="stall-content-stat-value">
+                  {stallContents.filter((c) => c.stall_id).length}
+                </div>
+              </div>
+              <div className="stall-content-stat-item">
+                <div className="stall-content-stat-label">Quán khả dụng</div>
+                <div className="stall-content-stat-value">{availableStalls.length}</div>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
 
-      <Card>
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} md={12}>
-            <Input
-              size="large"
-              value={keyword}
-              onChange={(e) => {
-                setKeyword(e.target.value);
-                setCurrentPage(1);
+        <Card className="stall-content-filter-card">
+          <Row gutter={[12, 12]} align="middle">
+            <Col xs={24} md={16}>
+              <Input
+                size="large"
+                value={keyword}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setCurrentPage(1);
+                }}
+                prefix={<SearchOutlined />}
+                suffix={<Search size={16} className="dashboard-input-icon" />}
+                placeholder="Tìm theo tên quán hoặc nội dung thuyết minh"
+              />
+            </Col>
+            <Col xs={24} md="auto" style={{ marginLeft: "auto" }}>
+              <Button
+                size="large"
+                type="primary"
+                className="dashboard-primary-button"
+                icon={<Plus size={16} />}
+                onClick={openAddModal}
+              >
+                Thêm nội dung
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+
+        <Card className="stall-content-table-card">
+          {isStallContentsLoading ? (
+            <div className="dashboard-skeleton-wrap">
+              <Skeleton active paragraph={{ rows: 2 }} />
+              <Skeleton active paragraph={{ rows: 3 }} />
+            </div>
+          ) : (
+            <Table
+              className="stall-content-table"
+              rowKey="id"
+              columns={columns}
+              dataSource={filteredStallContents}
+              size="middle"
+              scroll={{ x: 1080 }}
+              rowClassName={(_, index) =>
+                index % 2 === 0
+                  ? "dashboard-row-striped-even"
+                  : "dashboard-row-striped-odd"
+              }
+              pagination={{
+                current: currentPage,
+                pageSize,
+                total: filteredStallContents.length,
+                showSizeChanger: true,
+                pageSizeOptions: ["5", "10", "20", "50"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trên ${total} nội dung`,
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  setPageSize(size);
+                },
               }}
-              prefix={<SearchOutlined />}
-              placeholder="Tìm theo nội dung thuyết minh"
             />
-          </Col>
-        </Row>
-      </Card>
+          )}
+        </Card>
 
-      <Card>
-        <Table
-          className="stall-content-table"
-          rowKey="id"
-          loading={isStallContentsLoading}
-          columns={columns}
-          dataSource={filteredStallContents}
-          scroll={{ x: 1080 }}
-          pagination={{
-            current: currentPage,
-            pageSize,
-            total: filteredStallContents.length,
-            showSizeChanger: true,
-            pageSizeOptions: ["5", "10", "20"],
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            },
-          }}
-        />
-      </Card>
+        <Card title="Bản đồ nội dung thuyết minh" className="stall-content-map-card">
+          {isStallContentsLoading ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : (
+            <StallContentMap
+              stalls={stallsWithContent}
+              stallContents={stallContents}
+              onStallClick={(stall) => {
+                console.log("Play audio for stall:", stall.id);
+              }}
+            />
+          )}
+        </Card>
+      </main>
 
+      {/* Modals */}
       <StallContentAddModal
         open={isAddModalOpen}
         form={addForm}
@@ -533,6 +635,7 @@ export default function StallContentPage() {
         }}
         onCreate={handleCreate}
         stallOptions={stallOptions}
+        stalls={stalls}
       />
 
       <StallContentEditModal
@@ -557,6 +660,16 @@ export default function StallContentPage() {
         }}
         footer={null}
         width={900}
+        modalRender={(node) => (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.22 }}
+          >
+            {node}
+          </motion.div>
+        )}
       >
         {viewingItem ? (
           <StallContentDetail
@@ -567,6 +680,6 @@ export default function StallContentPage() {
           />
         ) : null}
       </Modal>
-    </Space>
+    </div>
   );
 }

@@ -1,13 +1,107 @@
 .stall-page-wrap {
   width: 100%;
+  padding: 24px;
 }
 
-.stall-page-wrap > .ant-space-item {
-  width: 100%;
+.stall-dashboard-theme {
+  --stall-primary: #0f6ecf;
+  --stall-primary-deep: #0b58a8;
+  --stall-soft: #eef6ff;
+  --stall-ink: #12263f;
+  --stall-muted: #4b5d73;
 }
 
-.stall-list-table {
+.stall-dashboard-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.stall-header-card {
+  border-radius: 16px !important;
+  background: linear-gradient(125deg, #f3f8ff 0%, #e8f2ff 45%, #d8eaff 100%);
+  border: 1px solid #c9dfff !important;
+}
+
+.stall-header-card .ant-card-body {
+  padding: 24px;
+}
+
+.stall-header-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #123a66;
+}
+
+.stall-header-subtitle {
+  margin-top: 8px;
+  margin-bottom: 0;
+  color: #2f5e8d;
+}
+
+.stall-stats-container {
   margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.stall-stat-card {
+  border-radius: 12px;
+  border: 1px solid rgba(15, 110, 207, 0.18);
+  background: rgba(255, 255, 255, 0.75);
+  padding: 12px;
+}
+
+.stall-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4d6d8f;
+}
+
+.stall-stat-value {
+  margin-top: 4px;
+  color: #134174;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.stall-filter-card,
+.stall-list-card {
+  border-radius: 14px !important;
+  border: 1px solid #e7edf2 !important;
+  box-shadow: 0 10px 22px rgba(16, 24, 40, 0.05);
+}
+
+.stall-input-icon {
+  color: #94a3b8;
+}
+
+.stall-primary-btn {
+  background: linear-gradient(135deg, var(--stall-primary) 0%, var(--stall-primary-deep) 100%) !important;
+  border: none !important;
+}
+
+.stall-list-table .ant-table-thead > tr > th {
+  background: #f8fafc;
+  color: #344054;
+  font-weight: 600;
+}
+
+.dashboard-row-striped-even td {
+  background: #ffffff;
+}
+
+.dashboard-row-striped-odd td {
+  background: #f5f9ff;
+}
+
+.stall-list-table .ant-table-tbody > tr:hover > td {
+  background: #eaf3ff !important;
 }
 
 .stall-table-thumbnail {
@@ -15,4 +109,47 @@
   height: 56px;
   border-radius: 10px;
   object-fit: cover;
+}
+
+.stall-content-action-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.stall-action-btn {
+  border-radius: 8px;
+  color: #475467;
+}
+
+.stall-action-btn:hover {
+  background: #eaf3ff;
+  color: #0f6ecf;
+}
+
+.stall-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 992px) {
+  .stall-page-wrap {
+    padding: 16px;
+  }
+
+  .stall-stats-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stall-header-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .stall-header-title {
+    font-size: 22px;
+  }
 }
