@@ -15,27 +15,6 @@ import { useNavigate } from "react-router-dom";
 import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 import { useAuthStore } from "./useAuthStore";
 
-type ApiErrorLike = {
-  message?: string;
-};
-
-const isApiResponse = <T,>(payload: unknown): payload is ApiResponse<T> => {
-  return (
-    typeof payload === "object" &&
-    payload !== null &&
-    "data" in payload &&
-    "success" in payload
-  );
-};
-
-const extractAuthPayload = (payload: unknown): AuthResponse => {
-  if (isApiResponse<AuthResponse>(payload)) {
-    return payload.data;
-  }
-
-  return payload as AuthResponse;
-};
-
 export const useLogin = () => {
   const { setTokens, setUser } = useAuthStore();
   const navigate = useNavigate();
@@ -43,15 +22,13 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: async (credentials: LoginRequest) => {
-      const response = await rootApiService.post<
-        ApiResponse<AuthResponse> | AuthResponse
-      >(
+      const response = await rootApiService.post<ApiResponse<AuthResponse>>(
         API_ENDPOINTS.AUTH.LOGIN,
         credentials,
         {}, // headers
         { skipAuth: true }, // This will prevent token refresh attempts
       );
-      return extractAuthPayload(response);
+      return response.data;
     },
     onSuccess: async (data) => {
       // Set tokens first
@@ -70,9 +47,9 @@ export const useLogin = () => {
       queryClient.clear();
       navigate(REQUIRE_AUTH_ROUTES.OWNER_DASHBOARD);
     },
-    onError: (error: unknown) => {
-      const typedError = error as ApiErrorLike;
-      throw new Error(typedError.message || "Login failed");
+    onError: (error: any) => {
+      // The error message will now be the actual server message
+      throw new Error(error.message || "Login failed");
     },
   });
 };
@@ -137,9 +114,8 @@ export const useChangePassword = () => {
           ),
       );
     },
-    onError: (error: unknown) => {
-      const typedError = error as ApiErrorLike;
-      throw new Error(typedError.message || "Failed to change password");
+    onError: (error: any) => {
+      throw new Error(error.message || "Failed to change password");
     },
   });
 };
@@ -169,19 +145,16 @@ export const usePasswordResetConfirm = () => {
 export const useRegister = () => {
   return useMutation({
     mutationFn: async (credentials: RegisterRequest) => {
-      const response = await rootApiService.post<
-        ApiResponse<AuthResponse> | AuthResponse
-      >(
+      const response = await rootApiService.post<ApiResponse<AuthResponse>>(
         API_ENDPOINTS.AUTH.REGISTER,
         credentials,
         {}, // headers
         { skipAuth: true },
       );
-      return extractAuthPayload(response);
+      return response.data;
     },
-    onError: (error: unknown) => {
-      const typedError = error as ApiErrorLike;
-      throw new Error(typedError.message || "Registration failed");
+    onError: (error: any) => {
+      throw new Error(error.message || "Registration failed");
     },
   });
 };

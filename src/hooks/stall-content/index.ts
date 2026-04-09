@@ -14,7 +14,7 @@ export const useStallContents = () => {
     queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
     queryFn: async () => {
       const res = await rootApiService.get<ApiResponse<StallContentResponse[]>>(
-        API_ENDPOINTS.OWNER.STALL_CONTENT.LIST(),
+        API_ENDPOINTS.OWNER.STALL_CONTENT.LIST,
       );
 
       return res.data;
@@ -28,7 +28,7 @@ export const useAvailableStallsWithoutContent = () => {
     queryFn: async () => {
       const res = await rootApiService.get<
         ApiResponse<StallWithoutContentResponse[]>
-      >(API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS());
+      >(API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS);
 
       return res.data;
     },
@@ -73,7 +73,7 @@ export const useCreateStallContent = () => {
       payload: StallContentCreateRequest;
     }) =>
       rootApiService.post<ApiResponse<StallContentResponse>>(
-        API_ENDPOINTS.OWNER.STALL_CONTENT.CREATE(),
+        API_ENDPOINTS.OWNER.STALL_CONTENT.CREATE,
         payload,
       ),
     onSuccess: () => {

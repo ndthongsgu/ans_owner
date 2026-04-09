@@ -97,6 +97,7 @@ export default function StallContentDetail({
 }: StallContentDetailProps) {
   const showToast = useToast();
   const [isListening, setIsListening] = useState(false);
+  const [displayedScript, setDisplayedScript] = useState(item.tts_script || "");
 
   const { stopPlayback, playScript, playAudioUrl } =
     useAudioPlayback(showToast);
@@ -104,6 +105,43 @@ export default function StallContentDetail({
   const listenByLanguageMutation = useListenStallContentByLanguage();
 
   const previewScript = item.tts_script || "";
+
+  // Fetch nội dung theo ngôn ngữ được chọn
+  useEffect(() => {
+    const fetchScriptByLanguage = async () => {
+      const targetLanguage =
+        selectedLanguage?.trim() || item.language_code?.trim() || "vi";
+      const currentLanguage = item.language_code?.toLowerCase();
+
+      if (!item.stall_id) {
+        setDisplayedScript(previewScript);
+        return;
+      }
+
+      // Nếu chọn ngôn ngữ gốc, hiển thị script gốc
+      if (currentLanguage === targetLanguage.toLowerCase()) {
+        setDisplayedScript(previewScript);
+        return;
+      }
+
+      // Fetch script từ API cho ngôn ngữ khác
+      try {
+        const payload = await listenByLanguageMutation.mutateAsync({
+          stallId: item.stall_id,
+          languageCode: targetLanguage,
+        });
+
+        const playable = extractPlayableStallContent(payload);
+        setDisplayedScript(playable.script || previewScript || "");
+      } catch {
+        // Nếu lỗi API, hiển thị script gốc
+        setDisplayedScript(previewScript);
+      }
+    };
+
+    void fetchScriptByLanguage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLanguage, item.stall_id, item.language_code, previewScript]);
 
   useEffect(() => {
     return () => {
@@ -224,7 +262,7 @@ export default function StallContentDetail({
       <Card size="small" title="Nội dung thuyết minh">
         <Descriptions column={1} size="small">
           <Descriptions.Item label="Script">
-            <Text>{previewScript || "(Không có nội dung script)"}</Text>
+            <Text>{displayedScript || "(Không có nội dung script)"}</Text>
           </Descriptions.Item>
         </Descriptions>
       </Card>

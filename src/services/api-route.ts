@@ -35,9 +35,9 @@ export const API_ENDPOINTS = {
       LIMIT: "/owner/stalls/limit",
     },
     STALL_CONTENT: {
-      LIST: () => `/owner/stall-contents/all`,
-      AVAILABLE_STALLS: () => `/owner/stall-contents/available-stalls`,
-      CREATE: () => `/owner/stall-contents`,
+      LIST: `/owner/stall-contents/all`,
+      AVAILABLE_STALLS: `/owner/stall-contents/available-stalls`,
+      CREATE: `/owner/stall-contents`,
       DETAIL: (stallId: string, contentId: string) =>
         `/owner/stall-contents/${stallId}/${contentId}`,
       UPDATE: (stallId: string, contentId: string) =>

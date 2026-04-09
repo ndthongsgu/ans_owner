@@ -7,7 +7,9 @@ export type StallContentCreateRequest = {
 };
 
 export type StallContentUpdateRequest = {
-  tts_script?: string | null;
+  stall_id: string;
+  stall_name: string;
+  tts_script: string;
 };
 
 export type StallContentResponse = {
@@ -18,7 +20,7 @@ export type StallContentResponse = {
   audio_url: string;
   audio_duration?: number | null;
   audio_file_size?: number | null;
-  tts_script?: string | null;
+  tts_script: string;
   is_deleted: boolean;
   created_at: number;
   updated_at?: number | null;
@@ -30,6 +32,6 @@ export type StallContentListResponse = {
 };
 
 export type StallWithoutContentResponse = {
-  stall_id: string;
+  id: string;
   stall_name: string;
 };

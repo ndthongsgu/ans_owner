@@ -71,24 +71,22 @@ export default function StallContentPage() {
 
   const { data: stallContents = [], isLoading: isStallContentsLoading } =
     useStallContents();
-  const {
-    data: stallsWithoutContent = [],
-    isLoading: isAvailableStallsLoading,
-    refetch: refetchAvailableStalls,
-  } = useAvailableStallsWithoutContent();
+
+  const { data: availableStalls = [], refetch: refetchAvailableStalls } =
+    useAvailableStallsWithoutContent();
+
+  const stallOptions = useMemo(
+    () =>
+      availableStalls.map((stall) => ({
+        label: stall.stall_name,
+        value: stall.id,
+      })),
+    [availableStalls],
+  );
 
   const createMutation = useCreateStallContent();
   const updateMutation = useUpdateStallContent();
   const deleteMutation = useDeleteStallContent();
-
-  const stallOptions = useMemo(
-    () =>
-      stallsWithoutContent.map((stall) => ({
-        label: stall.stall_name,
-        value: stall.stall_id,
-      })),
-    [stallsWithoutContent],
-  );
 
   const languageOptions = useMemo(() => {
     const languages = ["vi", "en", "zh", "ja", "ko"];
@@ -99,20 +97,21 @@ export default function StallContentPage() {
   }, []);
 
   const openAddModal = async () => {
-    if (isAvailableStallsLoading) {
-      showToast({
-        type: "info",
-        title: "Đang tải dữ liệu",
-        message: "Vui lòng chờ danh sách quán khả dụng được cập nhật",
-      });
-      return;
-    }
-
     try {
-      const result = await refetchAvailableStalls();
-      const availableStalls = result.data || [];
+      const { data: availableStalls = [] } = await refetchAvailableStalls();
 
-      if (!availableStalls.length) {
+      const usedStallIds = new Set(
+        stallContents.map((item) => item.id).filter(Boolean),
+      );
+
+      const nextOptions = availableStalls
+        .filter((stall) => !usedStallIds.has(stall.id))
+        .map((stall) => ({
+          label: stall.stall_name,
+          value: stall.id,
+        }));
+
+      if (!nextOptions.length) {
         showToast({
           type: "warning",
           title: "Không còn quán khả dụng",
@@ -122,10 +121,6 @@ export default function StallContentPage() {
         return;
       }
 
-      addForm.setFieldsValue({
-        stall_id: availableStalls[0]?.stall_id || "",
-        tts_script: "",
-      });
       setIsAddModalOpen(true);
     } catch {
       showToast({
@@ -185,10 +180,15 @@ export default function StallContentPage() {
         tts_script: values.tts_script.trim(),
       };
 
-      await createMutation.mutateAsync({
-        stallId: selectedStallId,
-        payload,
-      });
+      showLoading();
+      try {
+        await createMutation.mutateAsync({
+          stallId: selectedStallId,
+          payload,
+        });
+      } finally {
+        hideLoading();
+      }
 
       setIsAddModalOpen(false);
       addForm.resetFields();
@@ -197,11 +197,25 @@ export default function StallContentPage() {
         title: "Thành công",
         message: "Đã thêm nội dung thuyết minh",
       });
-    } catch {
+    } catch (error: unknown) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "errorFields" in error &&
+        Array.isArray((error as { errorFields?: unknown[] }).errorFields)
+      ) {
+        showToast({
+          type: "warning",
+          title: "Thiếu thông tin",
+          message: "Vui lòng nhập đầy đủ thông tin trước khi lưu",
+        });
+        return;
+      }
+
       showToast({
-        type: "warning",
-        title: "Thiếu thông tin",
-        message: "Vui lòng nhập đầy đủ thông tin trước khi lưu",
+        type: "error",
+        title: "Tạo thất bại",
+        message: "Không thể tạo nội dung thuyết minh. Vui lòng thử lại.",
       });
     }
   };
@@ -209,12 +223,8 @@ export default function StallContentPage() {
   const openEditModal = (data: StallContentResponse) => {
     editForm.setFieldsValue({
       id: data?.id,
-      stall_id: data.stall_id,
-      stall_name:
-        data.stall_name ||
-        stalls.find((item) => item.id === data.stall_id)?.stall_name ||
-        data.stall_id,
-      tts_script: data.tts_script || "",
+      stall_name: data.stall_name,
+      tts_script: data.tts_script,
     });
 
     setEditingItem(data);
@@ -253,7 +263,9 @@ export default function StallContentPage() {
       }
 
       const payload: StallContentUpdateRequest = {
-        tts_script: values.tts_script ? values.tts_script.trim() : undefined,
+        stall_id: stallId,
+        stall_name: values.stall_name.trim(),
+        tts_script: values.tts_script.trim(),
       };
 
       showLoading();
@@ -531,7 +543,6 @@ export default function StallContentPage() {
         onCancel={() => {
           setIsAddModalOpen(false);
           addForm.resetFields();
-          editForm.resetFields();
         }}
         onCreate={handleCreate}
         stallOptions={stallOptions}
