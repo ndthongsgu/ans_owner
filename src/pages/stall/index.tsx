@@ -1,11 +1,4 @@
-import {
-  AppstoreAddOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  EyeOutlined,
-  FilterOutlined,
-  SearchOutlined,
-} from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 import {
   Button,
   Card,
@@ -15,15 +8,20 @@ import {
   Modal,
   Popconfirm,
   Row,
+  Skeleton,
   Select,
   Skeleton,
   Space,
   Table,
+  Tooltip,
   type TableColumnsType,
   Typography,
   message,
 } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Eye, Pencil, Search, Trash2, Plus } from "lucide-react";
+import API_ENDPOINTS from "@/services/api-route";
 import { DEFAULT_NEW_COVER_IMAGE } from "@/constants/stall.constants";
 import type { StallResponse } from "@/dto/stall.dto";
 import { useLoading } from "@/context/LoadingContext";
@@ -43,6 +41,7 @@ import StallEditModal, { type StallEditSubmitValues } from "./edit/index";
 import StallDetail from "./detail";
 import { normalizeStallCoverImage } from "@/utils/stall.utils";
 import "./index.css";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function StallPage() {
   const showToast = useToast();
@@ -52,6 +51,7 @@ export default function StallPage() {
   const createStallMutation = useCreateStall();
   const updateStallMutation = useUpdateStall();
   const deleteStallMutation = useDeleteStall();
+  const queryClient = useQueryClient();
 
   const [isAddStallModalOpen, setIsAddStallModalOpen] = useState(false);
   const [isEditStallModalOpen, setIsEditStallModalOpen] = useState(false);
@@ -495,6 +495,13 @@ export default function StallPage() {
     try {
       await deleteStallMutation.mutateAsync(stallId);
       message.success("Đã xóa quán");
+      // Invalidate stall content queries to reset data in stall-content page
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
+      });
     } catch {
       message.error("Không thể xóa quán. Vui lòng thử lại.");
     }
@@ -507,17 +514,18 @@ export default function StallPage() {
 
   const stallColumns: TableColumnsType<StallResponse> = [
     {
-      title: "Thumbnail",
+      title: "Ảnh",
       dataIndex: "cover_image",
       key: "cover_image",
-      width: 90,
+      width: 80,
       render: (_, record) => (
         <Image
           src={getCoverImage(record)}
           fallback={DEFAULT_NEW_COVER_IMAGE}
-          alt={record.cover_image}
+          alt={record.cover_image || "Cover"}
           className="stall-table-thumbnail"
-          preview={false}
+          preview
+          style={{ cursor: "pointer" }}
         />
       ),
     },
@@ -527,243 +535,227 @@ export default function StallPage() {
       key: "stall_name",
       width: 180,
       render: (stall_name: string) => (
-        <Space direction="vertical" size={2}>
-          <Typography.Text strong>{stall_name}</Typography.Text>
-        </Space>
+        <Tooltip title={stall_name}>
+          <Typography.Text strong ellipsis>
+            {stall_name}
+          </Typography.Text>
+        </Tooltip>
       ),
     },
     {
       title: "Danh mục",
       dataIndex: "category",
       key: "category",
-      width: 120,
-      render: (value: string) => <Typography.Text>{value}</Typography.Text>,
+      width: 110,
+      responsive: ["md"],
+      render: (value: string) => (
+        <Tooltip title={value}>
+          <Typography.Text ellipsis>{value}</Typography.Text>
+        </Tooltip>
+      ),
     },
     {
       title: "Mức giá",
       dataIndex: "price_range",
       key: "price_range",
-      width: 120,
+      width: 100,
+      responsive: ["md"],
       render: (_, record) => (
-        <Typography.Text>{getPriceRange(record)}</Typography.Text>
+        <Typography.Text type="success" strong>
+          {getPriceRange(record)}
+        </Typography.Text>
       ),
     },
     {
       title: "Giờ hoạt động",
       key: "operatingHours",
-      width: 150,
+      width: 130,
+      responsive: ["xl"],
       render: (_, record) => (
-        <Typography.Text>
-          {getOpeningHours(record)} - {getClosingHours(record)}
-        </Typography.Text>
+        <Tooltip
+          title={`Mở: ${getOpeningHours(record)} - Đóng: ${getClosingHours(record)}`}
+        >
+          <Typography.Text type="secondary">
+            {getOpeningHours(record)} - {getClosingHours(record)}
+          </Typography.Text>
+        </Tooltip>
       ),
     },
     {
       title: "Thao tác",
       key: "actions",
-      width: 300,
+      width: 200,
       fixed: "right",
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => handleOpenDetail(record)}
-          >
-            Xem chi tiết
-          </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => handleOpenEditStall(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Xóa quán"
-            description="Bạn có chắc chắn muốn xóa quán này?"
-            okText="Xóa"
-            cancelText="Hủy"
-            onConfirm={() => handleDeleteStall(record.id)}
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Xóa
-            </Button>
-          </Popconfirm>
+        <Space size={4} className="stall-content-action-buttons">
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              size="small"
+              className="stall-action-btn"
+              icon={<Eye size={16} />}
+              onClick={() => handleOpenDetail(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa">
+            <Button
+              type="text"
+              size="small"
+              className="stall-action-btn"
+              icon={<Pencil size={16} />}
+              onClick={() => handleOpenEditStall(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Popconfirm
+              title="Xóa quán"
+              description="Bạn có chắc chắn muốn xóa quán này?"
+              okText="Xóa"
+              okType="danger"
+              cancelText="Hủy"
+              onConfirm={() => handleDeleteStall(record.id)}
+            >
+              <Button
+                type="text"
+                size="small"
+                className="stall-action-btn"
+                danger
+                icon={<Trash2 size={16} />}
+              />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
   ];
 
   return (
-    <Space direction="vertical" size="large" className="stall-page-wrap">
-      <section className="stall-hero">
-        <div className="stall-hero-content">
-          <Typography.Text className="stall-hero-kicker">
-            Owner Control Center
-          </Typography.Text>
-          <Typography.Title level={2} className="stall-hero-title">
-            Tăng doanh thu bằng dashboard quản lý quán trực quan
-          </Typography.Title>
-          <Typography.Paragraph className="stall-hero-description">
-            Một màn hình duy nhất để theo dõi danh mục, cập nhật quán, kiểm soát
-            giới hạn gói và ra quyết định nhanh theo dữ liệu thời gian thực.
-          </Typography.Paragraph>
-          <Space wrap className="stall-hero-badges">
-            <span className="stall-hero-badge">Realtime quản lý quán</span>
-            <span className="stall-hero-badge">Chỉnh sửa siêu nhanh</span>
-            <span className="stall-hero-badge">Tối ưu cho mobile</span>
-          </Space>
-          <Space wrap>
-            <Button
-              size="large"
-              type={reachedStallLimit ? "default" : "primary"}
-              danger={reachedStallLimit}
-              disabled={reachedStallLimit}
-              icon={<AppstoreAddOutlined />}
-              onClick={handleOpenAddStallModal}
-            >
-              Thêm quán mới
-            </Button>
-            {hasStallLimit ? (
-              <Typography.Text
-                className="stall-hero-limit"
-                type={reachedStallLimit ? "danger" : "secondary"}
-              >
-                Đã dùng {currentStalls}/{maxStalls} quán, còn{" "}
-                {remainingStalls ?? 0}
-              </Typography.Text>
-            ) : null}
-          </Space>
-        </div>
-      </section>
-
-      <Row gutter={[16, 16]} className="stall-kpi-row">
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stall-kpi-card">
-            <Typography.Text type="secondary">Tổng quán</Typography.Text>
-            <Typography.Title level={3} className="stall-kpi-value">
-              {stalls.length}
-            </Typography.Title>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stall-kpi-card">
-            <Typography.Text type="secondary">
-              Hiển thị hiện tại
-            </Typography.Text>
-            <Typography.Title level={3} className="stall-kpi-value">
-              {filteredStalls.length}
-            </Typography.Title>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stall-kpi-card">
-            <Typography.Text type="secondary">Danh mục</Typography.Text>
-            <Typography.Title level={3} className="stall-kpi-value">
-              {totalCategories}
-            </Typography.Title>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stall-kpi-card">
-            <Typography.Text type="secondary">Có thể thêm</Typography.Text>
-            <Typography.Title level={3} className="stall-kpi-value">
-              {hasStallLimit ? (remainingStalls ?? 0) : "-"}
-            </Typography.Title>
-            {occupancyPercent !== null ? (
-              <Typography.Text className="stall-kpi-subtext" type="secondary">
-                Dung lượng gói đã dùng {occupancyPercent}%
-              </Typography.Text>
-            ) : null}
-          </Card>
-        </Col>
-      </Row>
-
-      <Card className="stall-panel-card">
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} lg={10}>
-            <Input
-              size="large"
-              value={keyword}
-              onChange={(e) => {
-                setKeyword(e.target.value);
-                setCurrentPage(1);
-              }}
-              prefix={<SearchOutlined />}
-              placeholder="Tìm theo tên quán hoặc tọa độ"
-              allowClear
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={7}>
-            <Select
-              size="large"
-              value={filterCategory}
-              options={categoryFilterOptions}
-              onChange={(value) => {
-                setFilterCategory(value);
-                setCurrentPage(1);
-              }}
-              suffixIcon={<FilterOutlined />}
-              style={{ width: "100%" }}
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={7}>
-            <Select
-              size="large"
-              value={filterPriceRange}
-              options={priceFilterOptions}
-              onChange={(value) => {
-                setFilterPriceRange(value);
-                setCurrentPage(1);
-              }}
-              suffixIcon={<FilterOutlined />}
-              style={{ width: "100%" }}
-            />
-          </Col>
-        </Row>
-      </Card>
-
-      <Card className="stall-panel-card stall-table-panel">
-        {isLoading ? (
-          <Skeleton active paragraph={{ rows: 7 }} />
-        ) : (
-          <Table
-            className="stall-list-table"
-            rowKey="id"
-            columns={stallColumns}
-            dataSource={filteredStalls}
-            size="middle"
-            scroll={{ x: 980 }}
-            loading={isLoading}
-            pagination={{
-              current: currentPage,
-              pageSize,
-              total: filteredStalls.length,
-              showSizeChanger: true,
-              pageSizeOptions: ["5", "10", "50", "100"],
-              showTotal: (total) => `Tổng cộng ${total} quán`,
-              responsive: true,
-              onChange: (page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              },
-            }}
-            locale={{
-              emptyText: (
-                <div className="stall-empty-state">
-                  <Typography.Text strong>
-                    Chưa có quán phù hợp bộ lọc
-                  </Typography.Text>
-                  <Typography.Paragraph type="secondary">
-                    Thử đổi danh mục, mức giá hoặc tạo quán mới để bắt đầu.
-                  </Typography.Paragraph>
+    <div className="stall-page-wrap stall-dashboard-theme">
+      <main className="stall-dashboard-main">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className="stall-header-card">
+            <div>
+              <h1 className="stall-header-title">Quản lý quán ăn</h1>
+              <p className="stall-header-subtitle">
+                Giao diện tinh gọn, ưu tiên nội dung chính và dễ thao tác hơn.
+              </p>
+            </div>
+            {hasStallLimit && (
+              <div className="stall-stats-container">
+                <div className="stall-stat-card">
+                  <div className="stall-stat-label">Tổng quán</div>
+                  <div className="stall-stat-value">{currentStalls}</div>
                 </div>
-              ),
-            }}
-          />
-        )}
-      </Card>
+                <div className="stall-stat-card">
+                  <div className="stall-stat-label">Giới hạn</div>
+                  <div className="stall-stat-value">{maxStalls}</div>
+                </div>
+                <div className="stall-stat-card">
+                  <div className="stall-stat-label">Còn lại</div>
+                  <div className="stall-stat-value">{remainingStalls ?? 0}</div>
+                </div>
+              </div>
+            )}
+          </Card>
+        </motion.div>
+
+        <Card className="stall-filter-card">
+          <Row gutter={[12, 12]} align="middle">
+            <Col xs={24} md={10}>
+              <Input
+                size="large"
+                value={keyword}
+                onChange={(e) => {
+                  setKeyword(e.target.value);
+                  setCurrentPage(1);
+                }}
+                prefix={<SearchOutlined />}
+                suffix={<Search size={16} className="stall-input-icon" />}
+                placeholder="Tìm theo tên quán hoặc tọa độ"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                size="large"
+                value={filterCategory}
+                options={categoryFilterOptions}
+                onChange={(value) => {
+                  setFilterCategory(value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Lọc danh mục"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Select
+                size="large"
+                value={filterPriceRange}
+                options={priceFilterOptions}
+                onChange={(value) => {
+                  setFilterPriceRange(value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Lọc mức giá"
+              />
+            </Col>
+            <Col xs={24} md="auto" style={{ marginLeft: "auto" }}>
+              <Button
+                size="large"
+                type={reachedStallLimit ? "default" : "primary"}
+                danger={reachedStallLimit}
+                disabled={reachedStallLimit}
+                className="stall-primary-btn"
+                icon={<Plus size={16} />}
+                onClick={handleOpenAddStallModal}
+              >
+                Thêm quán
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+
+        <Card className="stall-list-card">
+          {isLoading ? (
+            <div className="stall-skeleton-wrap">
+              <Skeleton active paragraph={{ rows: 2 }} />
+              <Skeleton active paragraph={{ rows: 3 }} />
+            </div>
+          ) : (
+            <Table
+              className="stall-list-table stall-content-table"
+              rowKey="id"
+              columns={stallColumns}
+              dataSource={filteredStalls}
+              size="middle"
+              scroll={{ x: 980 }}
+              rowClassName={(_, index) =>
+                index % 2 === 0
+                  ? "dashboard-row-striped-even"
+                  : "dashboard-row-striped-odd"
+              }
+              pagination={{
+                current: currentPage,
+                pageSize,
+                total: filteredStalls.length,
+                showSizeChanger: true,
+                pageSizeOptions: ["5", "10", "20", "50"],
+                showTotal: (total, range) =>
+                  `${range[0]}-${range[1]} trên ${total} quán`,
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  setPageSize(size);
+                },
+              }}
+            />
+          )}
+        </Card>
+      </main>
+
+      {/* Modals */}
       <StallAddModal
         open={isAddStallModalOpen}
         onCancel={closeAddStallModal}
@@ -782,6 +774,16 @@ export default function StallPage() {
         open={isDetailModalOpen}
         onCancel={closeDetailStallModal}
         footer={null}
+        modalRender={(node) => (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.22 }}
+          >
+            {node}
+          </motion.div>
+        )}
       >
         {detailStall ? (
           <StallDetail
@@ -793,6 +795,6 @@ export default function StallPage() {
           />
         ) : null}
       </Modal>
-    </Space>
+    </div>
   );
 }
