@@ -11,15 +11,17 @@ import {
   Modal,
   Space,
   Tag,
-  message,
   Spin,
   Typography,
 } from "antd";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useToast } from "@/hooks/layout/useToast";
 import {
   useListPackages,
   useMySubscription,
   useRegisterPackage,
+  useMyPurchases,
+  useActivatePurchase,
 } from "@/hooks/subscription";
 import type { PackageDto } from "@/dto/subscription.dto";
 import { formatUnixTimestamp } from "@/utils/date.utils";
@@ -38,29 +40,31 @@ export default function PackageSelector({
 }: PackageSelectorProps) {
   const { data: packages, isLoading } = useListPackages();
   const { data: currentSubscription } = useMySubscription();
+  const { data: myPurchases } = useMyPurchases();
+  const activatePurchaseMutation = useActivatePurchase();
   const registerMutation = useRegisterPackage();
   const [current, setCurrent] = useState<PackageDto | null>(null);
+
+  const purchasedPackageIds = useMemo(() => {
+    return new Set(myPurchases?.map((pkg) => pkg.id) || []);
+  }, [myPurchases]);
 
   const activePackage = currentSubscription?.package;
   const activePackageName =
     activePackage?.name || currentSubscription?.packageName || "Gói hiện tại";
-  const activeExpiryText =
-    formatUnixTimestamp(
-      currentSubscription?.subscription_expires_at ||
-        currentSubscription?.expiresAt,
-      "",
-      "DD/MM/YYYY",
-    ) || null;
+
   const hasActiveSubscription = Boolean(
     currentSubscription?.is_active || currentSubscription?.active,
   );
+
+  const showToast = useToast();
 
   const handleOpenPayment = async (pkg: PackageDto) => {
     setCurrent(pkg);
 
     try {
       const session = await registerMutation.mutateAsync(pkg.id);
-      const paymentUrl = session.payment_url || session.qr_code_url;
+      const paymentUrl = session?.payment_url;
 
       if (!paymentUrl) {
         throw new Error("Backend chưa trả về đường dẫn thanh toán VNPay");
@@ -72,16 +76,57 @@ export default function PackageSelector({
         "noopener,noreferrer",
       );
       if (!paymentWindow) {
-        message.warning(
-          "Trình duyệt đang chặn popup. Vui lòng cho phép popup để mở trang thanh toán ở tab mới.",
-        );
+        showToast({
+          type: "warning",
+          title: "Cảnh báo",
+          message:
+            "Trình duyệt đang chặn popup. Vui lòng cho phép popup để mở trang thanh toán ở tab mới.",
+        });
+      } else {
+        showToast({
+          type: "success",
+          title: "Thành công",
+          message: "Đã mở VNPay. Hoàn tất thanh toán trên cổng VNPay.",
+        });
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
           : "Không tạo được giao dịch VNPay";
-      message.error(errorMessage);
+      showToast({
+        type: "error",
+        title: "Lỗi",
+        message: errorMessage,
+      });
+      setCurrent(null);
+    }
+  };
+
+  const handleActivatePurchase = async (pkg: PackageDto) => {
+    setCurrent(pkg);
+    try {
+      const purchasedPkg = myPurchases?.find((p) => p.id === pkg.id);
+      const transactionId = (purchasedPkg as any)?.transaction_id || purchasedPkg?.id;
+      if (!transactionId) {
+        throw new Error("Không tìm thấy mã giao dịch để kích hoạt");
+      }
+
+      await activatePurchaseMutation.mutateAsync(transactionId as string);
+      showToast({
+        type: "success",
+        title: "Thành công",
+        message: "Kích hoạt gói thành công!",
+      });
+      onClose();
+    } catch (err) {
+      showToast({
+        type: "error",
+        title: "Lỗi",
+        message: `Kích hoạt lại gói thất bại! ${err}`,
+      });
+    } finally {
+      setCurrent(null);
     }
   };
 
@@ -131,10 +176,7 @@ export default function PackageSelector({
             </div>
             <div className="metric-item">
               <FieldTimeOutlined />
-              <div>
-                <Text className="metric-label">Hiệu lực đến</Text>
-                <Text className="metric-value">{activeExpiryText || "--"}</Text>
-              </div>
+             
             </div>
           </div>
 
@@ -178,18 +220,6 @@ export default function PackageSelector({
                         {pkg.description ||
                           "Gói dịch vụ dành cho cửa hàng cần tối ưu vận hành."}
                       </Text>
-                      <div className="package-selector-meta">
-                        {createdAtText ? (
-                          <Text type="secondary">
-                            Tạo ngày: {createdAtText}
-                          </Text>
-                        ) : null}
-                        {updatedAtText ? (
-                          <Text type="secondary">
-                            Cập nhật: {updatedAtText}
-                          </Text>
-                        ) : null}
-                      </div>
                     </div>
                     <div className="package-selector-action">
                       <Text strong className="package-selector-price">
@@ -197,15 +227,30 @@ export default function PackageSelector({
                           ? "Miễn phí"
                           : `${pkg.price.toLocaleString("vi-VN")}đ`}
                       </Text>
-                      <Button
-                        type="primary"
-                        loading={
-                          registerMutation.isPending && current?.id === pkg.id
-                        }
-                        onClick={() => void handleOpenPayment(pkg)}
-                      >
-                        Đăng ký
-                      </Button>
+                      {activePackage?.id === pkg.id ? (
+                        <Button type="default" disabled>
+                          Đang hoạt động
+                        </Button>
+                      ) : purchasedPackageIds.has(pkg.id) ? (
+                        <Button
+                          type="primary"
+                          className="package-btn-use"
+                          loading={activatePurchaseMutation.isPending && current?.id === pkg.id}
+                          onClick={() => void handleActivatePurchase(pkg)}
+                        >
+                          Sử dụng gói này
+                        </Button>
+                      ) : (
+                        <Button
+                          type="primary"
+                          loading={
+                            registerMutation.isPending && current?.id === pkg.id
+                          }
+                          onClick={() => void handleOpenPayment(pkg)}
+                        >
+                          Đăng ký gói này
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </Card>

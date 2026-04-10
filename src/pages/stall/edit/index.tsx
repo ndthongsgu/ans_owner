@@ -2,6 +2,7 @@ import { UploadOutlined, EnvironmentOutlined } from "@ant-design/icons";
 import {
   AutoComplete,
   Button,
+  Card,
   Col,
   Form,
   Image,
@@ -119,15 +120,6 @@ function MapUpdater({ position, open }: MapUpdaterProps) {
   const map = useMap();
 
   useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() => {
-      map.invalidateSize();
-    }, 220);
-
-    return () => window.clearTimeout(timer);
-  }, [map, open]);
-
-  useEffect(() => {
     if (!position || !map) return;
 
     const coordinates = extractCoordinates(position);
@@ -135,7 +127,6 @@ function MapUpdater({ position, open }: MapUpdaterProps) {
 
     const { lat, lng } = coordinates;
 
-    // Double-check that coordinates are valid before trying to use them
     if (
       !isValidLatLng(lat, lng) ||
       !Number.isFinite(lat) ||
@@ -144,12 +135,32 @@ function MapUpdater({ position, open }: MapUpdaterProps) {
       return;
     }
 
-    try {
-      map.flyTo([lat, lng], 17, { duration: 0.8 });
-    } catch {
-      // Ignore invalid runtime coordinate errors to keep modal usable.
-    }
+    // Wait for the modal animation to finish + invalidate size before moving
+    // to prevent Leaflet from computing NaN during animation frames.
+    const timer = window.setTimeout(() => {
+      try {
+        map.invalidateSize({ pan: false, animate: false });
+        map.setView([lat, lng], 17, { animate: false });
+      } catch {
+        // Ignore errors if map is already unmounted.
+      }
+    }, 260);
+
+    return () => window.clearTimeout(timer);
   }, [map, position]);
+
+  // Invalidate size when modal opens (no position change yet)
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      try {
+        map.invalidateSize({ pan: false, animate: false });
+      } catch {
+        // ignore
+      }
+    }, 260);
+    return () => window.clearTimeout(timer);
+  }, [map, open]);
 
   return null;
 }
@@ -466,251 +477,270 @@ export default function StallEditModal({
       style={{ top: 20 }}
     >
       <Form form={form} layout="vertical">
-        <Row gutter={12}>
-          <Col xs={24} sm={16}>
-            <Form.Item
-              name="stall_name"
-              label="Tên quán"
-              rules={[{ required: true, message: "Vui lòng nhập tên quán" }]}
-            >
-              <Input size="large" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item
-              name="category"
-              label="Danh mục"
-              rules={[{ required: true, message: "Vui lòng nhập danh mục" }]}
-            >
-              <Input size="large" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={12}>
-          <Col xs={24} sm={16}>
-            <Form.Item
-              name="price_range"
-              label="Mức giá"
-              rules={[{ required: true, message: "Vui lòng nhập mức giá" }]}
-            >
-              <InputNumber
-                size="large"
-                min={10000}
-                max={100000000}
-                step={10000}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Form.Item
-              name="radius"
-              label="Bán kính nghe thuyết minh tự động (m)"
-              initialValue={50}
-            >
-              <InputNumber
-                size="large"
-                min={10}
-                max={5000}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={12}>
-          <Col xs={24} sm={12}>
-            <Form.Item name="contact_phone" label="Số điện thoại liên hệ">
-              <Input size="large" placeholder="Ví dụ: 0901234567" />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item name="website" label="Website">
-              <Input size="large" placeholder="https://your-site.com" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item name="latitude" hidden>
-          <InputNumber />
-        </Form.Item>
-        <Form.Item name="longitude" hidden>
-          <InputNumber />
-        </Form.Item>
-
-        <Row gutter={12}>
-          <Col xs={24}>
-            <Form.Item
-              className="stall-location-item"
-              name="location"
-              label="Vị trí quán"
-              rules={[
-                {
-                  required: true,
-                  message:
-                    "Vui lòng nhập địa điểm hoặc chọn vị trí trên bản đồ",
-                },
-              ]}
-            >
-              <AutoComplete
-                options={locationOptions}
-                onSearch={handleSearchLocation}
-                onSelect={handleSelectLocationSuggestion}
-                open={shouldShowLocationSuggest}
-                notFoundContent={
-                  searchingLocation
-                    ? "Đang tìm địa điểm..."
-                    : "Không có gợi ý phù hợp"
-                }
-                filterOption={false}
-              >
-                <Input
-                  size="large"
-                  placeholder="Nhập tên địa điểm hoặc chọn trên bản đồ..."
-                  prefix={<EnvironmentOutlined />}
-                />
-              </AutoComplete>
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <div className="stall-map-canvas">
-          <span className="stall-map-badge">Chạm vào bản đồ để ghim</span>
-          <MapContainer
-            center={mapCenter}
-            zoom={DEFAULT_ZOOM}
-            scrollWheelZoom
-            className="stall-add-map"
-          >
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-              subdomains={["a", "b", "c", "d"]}
-              maxZoom={20}
-            />
-            <MapUpdater position={safeSelectedPosition} open={open} />
-            <LocationPicker onPick={handlePickPosition} />
-            {safeSelectedPosition ? (
-              <Marker
-                position={safeSelectedPosition}
-                icon={locationMarkerIcon}
-              />
-            ) : null}
-          </MapContainer>
-        </div>
-
-        <Row gutter={12} style={{ marginTop: 20 }}>
-          <Col xs={24} sm={12}>
-            <Form.Item
-              name="opening_hours"
-              label="Giờ mở cửa"
-              rules={[{ required: true, message: "Vui lòng chọn giờ mở cửa" }]}
-            >
-              <TimePicker
-                size="large"
-                format="HH:mm"
-                minuteStep={5}
-                changeOnScroll
-                style={{ width: "100%" }}
-                placeholder="Chọn giờ mở cửa"
-                onChange={() => {
-                  void form
-                    .validateFields(["close_hours"])
-                    .catch(() => undefined);
-                }}
-              />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12}>
-            <Form.Item
-              name="close_hours"
-              label="Giờ đóng cửa"
-              dependencies={["opening_hours"]}
-              rules={[
-                { required: true, message: "Vui lòng chọn giờ đóng cửa" },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    const opening = getFieldValue("opening_hours");
-
-                    if (!opening || !value) {
-                      return Promise.resolve();
-                    }
-
-                    if (!isClosingAfterOpening(opening, value)) {
-                      return Promise.reject(
-                        new Error("Giờ đóng cửa phải sau giờ mở cửa"),
-                      );
-                    }
-
-                    return Promise.resolve();
-                  },
-                }),
-              ]}
-            >
-              <TimePicker
-                size="large"
-                format="HH:mm"
-                minuteStep={5}
-                changeOnScroll
-                style={{ width: "100%" }}
-                placeholder="Chọn giờ đóng cửa"
-              />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item
-          name="cover_image"
-          label="Ảnh bìa quán"
-          rules={[{ required: true, message: "Vui lòng chọn ảnh bìa quán" }]}
-        >
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              hidden
-              aria-label="Chọn ảnh bìa quán"
-              title="Chọn ảnh bìa quán"
-              className="stall-file-input-hidden"
-              onChange={handleSelectCoverFile}
-            />
-
-            <Space direction="vertical" size="small" style={{ width: "100%" }}>
-              <Space>
-                <Button
-                  icon={<UploadOutlined />}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  Chọn ảnh bìa
-                </Button>
-                {watchedCoverImage ? (
-                  <Button
-                    danger
-                    onClick={() => {
-                      form.setFieldValue("cover_image", undefined);
-                      void form
-                        .validateFields(["cover_image"])
-                        .catch(() => undefined);
-                    }}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={15}>
+            <Card className="stall-form-card" title="Thông tin quán">
+              <Row gutter={12}>
+                <Col xs={24} sm={16}>
+                  <Form.Item
+                    name="stall_name"
+                    label="Tên quán"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập tên quán" },
+                    ]}
                   >
-                    Xóa ảnh
-                  </Button>
-                ) : null}
-              </Space>
+                    <Input size="large" placeholder="Ví dụ: Quán Ăn Gia Đình" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    name="category"
+                    label="Danh mục"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập danh mục" },
+                    ]}
+                  >
+                    <Input size="large" placeholder="Ví dụ: Món Việt" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col xs={24} sm={16}>
+                  <Form.Item
+                    name="price_range"
+                    label="Mức giá"
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mức giá" },
+                    ]}
+                  >
+                    <InputNumber
+                      size="large"
+                      min={10000}
+                      max={100000000}
+                      step={10000}
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item
+                    name="radius"
+                    label="Phạm vi nghe (m)"
+                    initialValue={50}
+                  >
+                    <InputNumber
+                      size="large"
+                      min={10}
+                      max={5000}
+                      style={{ width: "100%" }}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="contact_phone" label="Số điện thoại liên hệ">
+                    <Input size="large" placeholder="Ví dụ: 0901234567" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="website" label="Website">
+                    <Input size="large" placeholder="https://your-site.com" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="opening_hours"
+                    label="Giờ mở cửa"
+                    rules={[
+                      { required: true, message: "Vui lòng chọn giờ mở cửa" },
+                    ]}
+                  >
+                    <TimePicker
+                      size="large"
+                      format="HH:mm"
+                      minuteStep={5}
+                      changeOnScroll
+                      style={{ width: "100%" }}
+                      placeholder="Chọn giờ mở cửa"
+                      onChange={() => {
+                        void form
+                          .validateFields(["close_hours"])
+                          .catch(() => undefined);
+                      }}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="close_hours"
+                    label="Giờ đóng cửa"
+                    dependencies={["opening_hours"]}
+                    rules={[
+                      { required: true, message: "Vui lòng chọn giờ đóng cửa" },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          const opening = getFieldValue("opening_hours");
 
-              {watchedCoverImage ? (
-                <Image
-                  src={normalizeStallCoverImage(watchedCoverImage)}
-                  alt="Ảnh bìa quán"
-                  className="stall-cover-preview"
-                />
-              ) : (
-                <Text type="secondary">Chưa chọn ảnh bìa</Text>
-              )}
-            </Space>
-          </div>
-        </Form.Item>
+                          if (!opening || !value) {
+                            return Promise.resolve();
+                          }
+
+                          if (!isClosingAfterOpening(opening, value)) {
+                            return Promise.reject(
+                              new Error("Giờ đóng cửa phải sau giờ mở cửa"),
+                            );
+                          }
+
+                          return Promise.resolve();
+                        },
+                      }),
+                    ]}
+                  >
+                    <TimePicker
+                      size="large"
+                      format="HH:mm"
+                      minuteStep={5}
+                      changeOnScroll
+                      style={{ width: "100%" }}
+                      placeholder="Chọn giờ đóng cửa"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item
+                name="cover_image"
+                label="Ảnh bìa quán"
+                rules={[
+                  { required: true, message: "Vui lòng chọn ảnh bìa quán" },
+                ]}
+              >
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    hidden
+                    aria-label="Chọn ảnh bìa quán"
+                    title="Chọn ảnh bìa quán"
+                    className="stall-file-input-hidden"
+                    onChange={handleSelectCoverFile}
+                  />
+
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: "100%" }}
+                  >
+                    <Space>
+                      <Button
+                        icon={<UploadOutlined />}
+                        onClick={() => {
+                          if (!fileInputRef.current) return;
+                          fileInputRef.current.value = "";
+                          fileInputRef.current.click();
+                        }}
+                      >
+                        Chọn ảnh bìa
+                      </Button>
+                      {watchedCoverImage ? (
+                        <Button
+                          danger
+                          onClick={() => {
+                            form.setFieldValue("cover_image", undefined);
+                            void form
+                              .validateFields(["cover_image"])
+                              .catch(() => undefined);
+                          }}
+                        >
+                          Xóa ảnh
+                        </Button>
+                      ) : null}
+                    </Space>
+
+                    {watchedCoverImage ? (
+                      <Image
+                        src={normalizeStallCoverImage(watchedCoverImage)}
+                        alt="Ảnh bìa quán"
+                        className="stall-cover-preview"
+                      />
+                    ) : (
+                      <Text type="secondary">Chưa chọn ảnh bìa</Text>
+                    )}
+                  </Space>
+                </div>
+              </Form.Item>
+            </Card>
+          </Col>
+          <Col xs={24} lg={9}>
+            <Card className="stall-map-card" title="Vị trí trên bản đồ">
+              <Form.Item name="latitude" hidden>
+                <InputNumber />
+              </Form.Item>
+              <Form.Item name="longitude" hidden>
+                <InputNumber />
+              </Form.Item>
+
+              <Form.Item
+                className="stall-location-item"
+                name="location"
+                label="Vị trí quán"
+                rules={[
+                  {
+                    required: true,
+                    message:
+                      "Vui lòng nhập địa điểm hoặc chọn vị trí trên bản đồ",
+                  },
+                ]}
+              >
+                <AutoComplete
+                  options={locationOptions}
+                  onSearch={handleSearchLocation}
+                  onSelect={handleSelectLocationSuggestion}
+                  open={shouldShowLocationSuggest}
+                  notFoundContent={
+                    searchingLocation
+                      ? "Đang tìm địa điểm..."
+                      : "Không có gợi ý phù hợp"
+                  }
+                  filterOption={false}
+                >
+                  <Input
+                    size="large"
+                    placeholder="Nhập tên địa điểm hoặc chọn trên bản đồ..."
+                    prefix={<EnvironmentOutlined />}
+                  />
+                </AutoComplete>
+              </Form.Item>
+
+              <div className="stall-map-canvas">
+                <span className="stall-map-badge">Chạm vào bản đồ để ghim</span>
+                <MapContainer
+                  center={mapCenter}
+                  zoom={DEFAULT_ZOOM}
+                  scrollWheelZoom
+                  className="stall-add-map"
+                >
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                    subdomains={["a", "b", "c", "d"]}
+                    maxZoom={20}
+                  />
+                  <MapUpdater position={safeSelectedPosition} open={open} />
+                  <LocationPicker onPick={handlePickPosition} />
+                  {safeSelectedPosition ? (
+                    <Marker
+                      position={safeSelectedPosition}
+                      icon={locationMarkerIcon}
+                    />
+                  ) : null}
+                </MapContainer>
+              </div>
+            </Card>
+          </Col>
+        </Row>
       </Form>
     </Modal>
   );

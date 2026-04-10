@@ -1,4 +1,4 @@
-﻿import { useLogout } from "@/hooks/auth/auth";
+import { useLogout } from "@/hooks/auth/auth";
 import { useAuth } from "@/hooks/auth/useAuth";
 import { useRouter } from "@/routes/hooks";
 import { LogoutOutlined, PhoneOutlined, UserOutlined } from "@ant-design/icons";
@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { ENFlag, VNFlag } from "../assets/icons";
 import { PUBLIC_ROUTES, REQUIRE_AUTH_ROUTES } from "../routes/routes";
+import { LANGUAGE_CODE_MAP, LANGUAGE_LABELS } from "../utils/language.utils";
 import "./AppHeader.css";
 
 type RoleAwareProfile =
@@ -106,8 +107,8 @@ export default function AppHeader() {
   };
 
   const languages = [
-    { key: "vi", label: "Tiếng Việt", flag: VNFlag },
-    { key: "en", label: "English", flag: ENFlag },
+    { key: LANGUAGE_CODE_MAP.vi, label: LANGUAGE_LABELS.vi, flag: VNFlag },
+    { key: LANGUAGE_CODE_MAP.en, label: LANGUAGE_LABELS.en, flag: ENFlag },
   ];
 
   const menuItems: MenuProps["items"] = languages.map((lang) => ({

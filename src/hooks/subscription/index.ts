@@ -78,11 +78,6 @@ const normalizeMySubscription = (payload: unknown): MySubscriptionDto => {
     (source.packageId as string) ||
     packageData?.id;
 
-  const rawExpiresAt =
-    (source.subscription_expires_at as number) ||
-    (source.expiresAt as number | string) ||
-    undefined;
-
   const active = Boolean(
     source.is_active ??
     source.active ??
@@ -93,11 +88,6 @@ const normalizeMySubscription = (payload: unknown): MySubscriptionDto => {
     owner_id: (source.owner_id as string) || undefined,
     subscription_package_id: subscriptionPackageId,
     is_active: Boolean(source.is_active ?? active),
-    subscription_start_at:
-      (source.subscription_start_at as number) || undefined,
-    subscription_expires_at:
-      (source.subscription_expires_at as number) || undefined,
-    remaining_seconds: (source.remaining_seconds as number) || undefined,
     package: packageData,
     packageId: subscriptionPackageId,
     packageName:
@@ -105,7 +95,6 @@ const normalizeMySubscription = (payload: unknown): MySubscriptionDto => {
       (source.packageName as string) ||
       (source.package_name as string) ||
       undefined,
-    expiresAt: rawExpiresAt,
     active,
   };
 };
@@ -153,6 +142,18 @@ export const useRegisterPackage = () => {
       queryClient.invalidateQueries({
         queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY],
       });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY_PURCHASES],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.SUBSCRIPTION.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.AUTH.PROFILE],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.ME],
+      });
     },
   });
 };
@@ -169,6 +170,48 @@ export const useCreateVnpayPaymentSession = () => {
       );
 
       return normalizeRegisterSession(res);
+    },
+  });
+};
+
+export const useMyPurchases = () => {
+  return useQuery<PackageDto[]>({
+    queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY_PURCHASES],
+    queryFn: async () => {
+      const res = await rootApiService.get<ApiResponse<PackageDto[]>>(
+        API_ENDPOINTS.SUBSCRIPTION.MY_PURCHASES,
+      );
+      return res.data;
+    },
+  });
+};
+
+export const useActivatePurchase = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (transaction_id: string) => {
+      const res = await rootApiService.post<ApiResponse<unknown>>(
+        API_ENDPOINTS.SUBSCRIPTION.ACTIVATE_PURCHASE,
+        { transaction_id },
+      );
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.SUBSCRIPTION.MY_PURCHASES],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.SUBSCRIPTION.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.AUTH.PROFILE],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.ME],
+      });
     },
   });
 };

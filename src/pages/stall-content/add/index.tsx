@@ -130,52 +130,6 @@ export default function StallContentAddModal({
           />
         </Form.Item>
 
-        {stallsWithCoordinates.length > 0 ? (
-          <div className="stall-content-map-selector-wrap">
-            <div className="stall-content-map-selector-title">
-              Chọn quán trực tiếp trên bản đồ
-            </div>
-            <MapContainer
-              center={mapCenter}
-              zoom={14}
-              scrollWheelZoom
-              className="stall-content-map-selector"
-            >
-              <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                subdomains={["a", "b", "c", "d"]}
-                maxZoom={20}
-              />
-              {stallsWithCoordinates.map((stall) => (
-                <Marker
-                  key={stall.id}
-                  position={[stall.latitude as number, stall.longitude as number]}
-                  icon={mapMarkerIcon}
-                >
-                  <Popup>
-                    <div className="stall-content-map-popup">
-                      <strong>{stall.stall_name}</strong>
-                      <button
-                        type="button"
-                        className="stall-content-map-popup-button"
-                        onClick={() => {
-                          form.setFieldValue("stall_id", stall.id);
-                          setSelectedMapPosition([
-                            stall.latitude as number,
-                            stall.longitude as number,
-                          ]);
-                        }}
-                      >
-                        Chọn quán này
-                      </button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
-        ) : null}
-
         <Form.Item
           name="tts_script"
           label="Nội dung thuyết minh"

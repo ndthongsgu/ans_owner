@@ -1,12 +1,17 @@
-import { Card, Descriptions, Image, Space, Typography } from "antd";
-import { Icon, type LatLngExpression } from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { MapContainer, Marker, TileLayer } from "react-leaflet";
-import { useMemo } from "react";
+import { Tag, Typography } from "antd";
+import {
+  Clock,
+  MapPin,
+  Phone,
+  Globe,
+  Store,
+  Tag as TagIcon,
+  Wallet,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import type { StallResponse } from "@/dto/stall.dto";
 import { normalizeStallCoverImage } from "@/utils/stall.utils";
+import { reverseGeocode } from "@/services/location.service";
 import "./index.css";
 
 type StallDetailProps = {
@@ -30,87 +35,149 @@ export default function StallDetail({
     typeof stall.longitude === "number" &&
     Number.isFinite(stall.longitude);
 
-  const mapCenter = useMemo<LatLngExpression | null>(() => {
-    if (!hasCoordinates) return null;
-    return [stall.latitude, stall.longitude];
-  }, [hasCoordinates, stall.latitude, stall.longitude]);
+  const [resolvedAddress, setResolvedAddress] = useState<string>("");
 
-  const mapMarkerIcon = useMemo(
-    () =>
-      new Icon({
-        iconUrl: markerIcon,
-        iconRetinaUrl: markerIcon2x,
-        shadowUrl: markerShadow,
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-      }),
-    [],
-  );
+  useEffect(() => {
+    const existingLocation = (stall as unknown as { location?: string })
+      .location;
+    if (existingLocation?.trim()) {
+      setResolvedAddress(existingLocation.trim());
+      return;
+    }
+
+    const parentAddress = getStallAddress(stall);
+    const isCoordinateOnly = /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(parentAddress);
+    const isPlaceholder = parentAddress === "Chưa cập nhật địa chỉ";
+
+    if (!isCoordinateOnly && !isPlaceholder) {
+      setResolvedAddress(parentAddress);
+      return;
+    }
+
+    if (!hasCoordinates) {
+      setResolvedAddress(parentAddress || "Chưa cập nhật địa chỉ");
+      return;
+    }
+
+    void reverseGeocode(
+      stall.latitude as number,
+      stall.longitude as number,
+    ).then((name) => setResolvedAddress(name || parentAddress));
+  }, [stall, hasCoordinates, getStallAddress]);
+
+  const displayAddress = resolvedAddress || getStallAddress(stall);
+  const coverSrc = normalizeStallCoverImage(stall.cover_image);
+  const openHour = getOpeningHours(stall);
+  const closeHour = getClosingHours(stall);
+  const priceRange = getPriceRange(stall);
+  const phone = stall.contact_phone;
+  const website = (stall as unknown as { website?: string }).website;
 
   return (
-    <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-      <div className="stall-detail-hero">
-        <Image
-          src={normalizeStallCoverImage(stall.cover_image)}
-          alt={stall.cover_image}
-          className="stall-detail-cover"
-        />
-        <div className="stall-detail-hero-content">
-          <Typography.Title level={4} className="stall-detail-title">
+    <div className="sd-root">
+      {/* Hero banner */}
+      <div className="sd-hero">
+        <img src={coverSrc} alt={stall.stall_name} className="sd-hero-img" />
+        <div className="sd-hero-overlay">
+          <div className="sd-hero-badge">
+            <Store size={13} />
+            {stall.category || "Quán ăn"}
+          </div>
+          <Typography.Title level={3} className="sd-hero-title">
             {stall.stall_name}
           </Typography.Title>
-          <Typography.Text type="secondary">
-            {getStallAddress(stall)}
-          </Typography.Text>
+          {displayAddress && (
+            <div className="sd-hero-addr">
+              <MapPin size={13} />
+              <span>{displayAddress}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      <Card className="stall-detail-card" title="Thông tin quán">
-        <Descriptions column={1} bordered size="small">
-          <Descriptions.Item label="Tên quán">
-            {stall.stall_name}
-          </Descriptions.Item>
-          <Descriptions.Item label="Địa chỉ quán">
-            {getStallAddress(stall)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Danh mục">{stall.category}</Descriptions.Item>
-          <Descriptions.Item label="Mức giá">
-            {getPriceRange(stall)}
-          </Descriptions.Item>
-          <Descriptions.Item label="Giờ hoạt động">
-            {getOpeningHours(stall)} - {getClosingHours(stall)}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
-
-      <Card className="stall-detail-card" title="Vị trí trên bản đồ">
-        {hasCoordinates && mapCenter ? (
-          <div className="stall-detail-map-wrap">
-            <MapContainer
-              center={mapCenter}
-              zoom={16}
-              scrollWheelZoom
-              className="stall-detail-map"
-            >
-              <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                subdomains={["a", "b", "c", "d"]}
-                maxZoom={20}
-              />
-              <Marker position={mapCenter} icon={mapMarkerIcon} />
-            </MapContainer>
-            <Typography.Text type="secondary" className="stall-detail-map-note">
-              {stall.latitude}, {stall.longitude}
-            </Typography.Text>
+      {/* Info grid */}
+      <div className="sd-grid">
+        <div className="sd-info-item">
+          <div className="sd-info-icon sd-icon-blue">
+            <TagIcon size={15} />
           </div>
-        ) : (
-          <Typography.Text type="secondary">
-            Chưa có tọa độ để hiển thị bản đồ.
-          </Typography.Text>
+          <div className="sd-info-body">
+            <div className="sd-info-label">Danh mục</div>
+            <div className="sd-info-value">
+              <Tag color="blue">{stall.category || "—"}</Tag>
+            </div>
+          </div>
+        </div>
+
+        <div className="sd-info-item">
+          <div className="sd-info-icon sd-icon-green">
+            <Wallet size={15} />
+          </div>
+          <div className="sd-info-body">
+            <div className="sd-info-label">Mức giá</div>
+            <div className="sd-info-value sd-value-green">{priceRange}</div>
+          </div>
+        </div>
+
+        <div className="sd-info-item">
+          <div className="sd-info-icon sd-icon-orange">
+            <Clock size={15} />
+          </div>
+          <div className="sd-info-body">
+            <div className="sd-info-label">Giờ hoạt động</div>
+            <div className="sd-info-value">
+              {openHour}
+              <span className="sd-time-sep">→</span>
+              {closeHour}
+            </div>
+          </div>
+        </div>
+
+        <div className="sd-info-item">
+          <div className="sd-info-icon sd-icon-purple">
+            <MapPin size={15} />
+          </div>
+          <div className="sd-info-body">
+            <div className="sd-info-label">Địa chỉ</div>
+            <div className="sd-info-value sd-value-muted">
+              {displayAddress || "Chưa cập nhật"}
+            </div>
+          </div>
+        </div>
+
+        {phone && (
+          <div className="sd-info-item">
+            <div className="sd-info-icon sd-icon-teal">
+              <Phone size={15} />
+            </div>
+            <div className="sd-info-body">
+              <div className="sd-info-label">Điện thoại</div>
+              <a className="sd-info-value sd-link" href={`tel:${phone}`}>
+                {phone}
+              </a>
+            </div>
+          </div>
         )}
-      </Card>
-    </Space>
+
+        {website && (
+          <div className="sd-info-item">
+            <div className="sd-info-icon sd-icon-indigo">
+              <Globe size={15} />
+            </div>
+            <div className="sd-info-body">
+              <div className="sd-info-label">Website</div>
+              <a
+                className="sd-info-value sd-link"
+                href={website}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {website}
+              </a>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

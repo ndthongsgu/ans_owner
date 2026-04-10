@@ -38,7 +38,7 @@ import StallContentAddModal from "./add";
 import StallContentDetail from "./detail";
 import StallContentEditModal from "./edit";
 import StallContentMap from "@/components/stall-content/StallContentMap";
-import { LANGUAGE_LABELS } from "@/utils/language.utils";
+import { LANGUAGE_CODE_MAP, LANGUAGE_LABELS } from "@/utils/language.utils";
 import { formatUnixTimestamp } from "@/utils/date.utils";
 import "./index.css";
 
@@ -87,10 +87,9 @@ export default function StallContentPage() {
   const deleteMutation = useDeleteStallContent();
 
   const languageOptions = useMemo(() => {
-    const languages = ["vi", "en", "zh", "ja", "ko"];
-    return languages.map((code) => ({
+    return Object.keys(LANGUAGE_CODE_MAP).map((code) => ({
       value: code,
-      label: LANGUAGE_LABELS[code.toLowerCase()] || code.toUpperCase(),
+      label: LANGUAGE_LABELS[code as keyof typeof LANGUAGE_LABELS] || code.toUpperCase(),
     }));
   }, []);
 
@@ -431,8 +430,8 @@ export default function StallContentPage() {
       key: "created_at",
       width: 130,
       responsive: ["xl"],
-      render: (value: number | undefined) => (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      render: (value: string) => (
+        <Typography.Text style={{ fontSize: 14 }}>
           {formatUnixTimestamp(value)}
         </Typography.Text>
       ),
@@ -443,8 +442,8 @@ export default function StallContentPage() {
       key: "updated_at",
       width: 130,
       responsive: ["xl"],
-      render: (value: number | undefined) => (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+      render: (value: string) => (
+        <Typography.Text style={{ fontSize: 14 }}>
           {formatUnixTimestamp(value)}
         </Typography.Text>
       ),
@@ -454,6 +453,7 @@ export default function StallContentPage() {
       key: "actions",
       width: 260,
       fixed: "right",
+      align: "center",
       render: (_, record) => (
         <Space size="small" className="stall-content-action-buttons">
           <Tooltip title="Xem chi tiết">
@@ -516,13 +516,17 @@ export default function StallContentPage() {
             </div>
             <div className="stall-content-stats">
               <div className="stall-content-stat-item">
-                <div className="stall-content-stat-label">Tổng nội dung</div>
+                <div className="stall-content-stat-label">
+                  Tổng dữ liệu nội dung
+                </div>
                 <div className="stall-content-stat-value">
                   {stallContents.length}
                 </div>
               </div>
               <div className="stall-content-stat-item">
-                <div className="stall-content-stat-label">Quán được gán</div>
+                <div className="stall-content-stat-label">
+                  Nội dung đang sử dụng
+                </div>
                 <div className="stall-content-stat-value">
                   {stallContents.filter((c) => c.stall_id).length}
                 </div>
@@ -597,23 +601,6 @@ export default function StallContentPage() {
                   setCurrentPage(page);
                   setPageSize(size);
                 },
-              }}
-            />
-          )}
-        </Card>
-
-        <Card
-          title="Bản đồ nội dung thuyết minh"
-          className="stall-content-map-card"
-        >
-          {isStallContentsLoading ? (
-            <Skeleton active paragraph={{ rows: 6 }} />
-          ) : (
-            <StallContentMap
-              stalls={stallsWithContent}
-              stallContents={stallContents}
-              onStallClick={(stall) => {
-                console.log("Play audio for stall:", stall.id);
               }}
             />
           )}

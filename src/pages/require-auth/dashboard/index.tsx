@@ -27,7 +27,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import PackageSelector from "../../../components/owner/PackageSelector";
+import PackageSelector from "@/components/package/PackageSelector";
 import { useProfile } from "@/hooks/owner";
 import { useMySubscription } from "@/hooks/subscription";
 import { useStalls } from "@/hooks/stall/index";
@@ -40,7 +40,7 @@ import { useToast } from "@/hooks/layout/useToast";
 import { REQUIRE_AUTH_ROUTES } from "@/routes/routes";
 import { useNavigate } from "react-router-dom";
 import { formatUnixTimestamp } from "@/utils/date.utils";
-import { LANGUAGE_LABELS } from "@/utils/language.utils";
+import { LANGUAGE_CODE_MAP, LANGUAGE_LABELS } from "@/utils/language.utils";
 import type { StallContentResponse } from "@/dto/stall-content.dto";
 import "./index.css";
 
@@ -288,21 +288,11 @@ export default function Dashboard() {
   const selectedPoiCount = selectedStallContents.length;
 
   const languageOptions = useMemo(() => {
-    const languageSet = new Set<string>(
-      selectedStallContents
-        .map((item) => item.language_code?.trim().toLowerCase())
-        .filter((item): item is string => Boolean(item)),
-    );
-
-    if (!languageSet.size) {
-      languageSet.add("vi");
-    }
-
-    return Array.from(languageSet).map((code) => ({
+    return Object.keys(LANGUAGE_CODE_MAP).map((code) => ({
       value: code,
-      label: LANGUAGE_LABELS[code] || code.toUpperCase(),
+      label: LANGUAGE_LABELS[code as keyof typeof LANGUAGE_LABELS] || code.toUpperCase(),
     }));
-  }, [selectedStallContents]);
+  }, []);
 
   const preferredLanguage = useMemo(() => {
     if (!selectedStallContents.length) {
@@ -791,49 +781,6 @@ export default function Dashboard() {
                 onClick={() => navigate(REQUIRE_AUTH_ROUTES.OWNER_PROFILE)}
               >
                 Xem và chỉnh sửa thông tin
-              </Button>
-            </Card>
-
-            <Card title="Thông tin quán hiện tại" className="owner-info-card">
-              <div className="owner-info-item">
-                <ShopOutlined />
-                <div>
-                  <Text type="secondary">Tên quán</Text>
-                  <div>
-                    <Text strong>{shopName}</Text>
-                  </div>
-                </div>
-              </div>
-              <Divider />
-              <div className="owner-info-item">
-                <EnvironmentOutlined />
-                <div>
-                  <Text type="secondary">Địa chỉ</Text>
-                  <div>
-                    <Text>{shopLocation}</Text>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Gói dịch vụ" className="owner-info-card">
-              <div className="owner-info-item">
-                <CalendarOutlined />
-                <div>
-                  <Text>
-                    Gói hiện tại: <strong>{subscriptionName}</strong>
-                    {expirationText && (
-                      <span>
-                        {" "}
-                        (hết hạn: <strong>{expirationText}</strong>)
-                      </span>
-                    )}
-                  </Text>
-                </div>
-              </div>
-              <Divider />
-              <Button type="primary" onClick={() => setShowPackages(true)}>
-                Quản lý gói đăng ký
               </Button>
             </Card>
 

@@ -56,6 +56,8 @@ export const API_ENDPOINTS = {
     LIST: "/owner/subscription-packages",
     REGISTER: `/owner/subscription-packages/register`,
     MY: "/owner/subscription-packages/my-subscription",
+    MY_PURCHASES: "/owner/subscription-packages/my-purchases",
+    ACTIVATE_PURCHASE: "/owner/subscription-packages/activate-purchase",
   },
   PAYMENTS: {
     VNPAY_CREATE: "/user/payments/vnpay/create",

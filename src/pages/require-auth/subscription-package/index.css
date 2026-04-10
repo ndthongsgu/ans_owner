@@ -138,6 +138,11 @@
   box-shadow: 0 14px 30px rgba(245, 158, 11, 0.15);
 }
 
+.subscription-package-card.is-purchased {
+  border-color: #06b6d4;
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.12);
+}
+
 .subscription-package-top {
   display: flex;
   gap: 12px;
@@ -194,6 +199,91 @@
 
 .subscription-package-timestamp {
   color: var(--color-text-secondary);
+}
+
+/* ── History button ─────────────────────────────── */
+.subscription-history-btn {
+  border-color: #6366f1 !important;
+  color: #6366f1 !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.subscription-history-btn:hover {
+  background: #6366f1 !important;
+  color: #fff !important;
+  border-color: #6366f1 !important;
+}
+
+.subscription-history-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* ── History modal ───────────────────────────────── */
+.subscription-history-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.subscription-history-item-card {
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  height: 100%;
+  transition: box-shadow 0.2s;
+}
+
+.subscription-history-item-card:hover {
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+}
+
+.subscription-history-item-card.is-active {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+}
+
+.subscription-history-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.subscription-history-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscription-history-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── Use-package button (purchased) ─────────────── */
+.subscription-btn-use.ant-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  border-color: transparent !important;
+}
+
+.subscription-btn-use.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
 }
 
 .subscription-test-card {

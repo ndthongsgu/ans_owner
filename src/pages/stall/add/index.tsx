@@ -110,31 +110,40 @@ function MapUpdater({ position, open }: MapUpdaterProps) {
   const map = useMap();
 
   useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() => {
-      map.invalidateSize();
-    }, 220);
-
-    return () => window.clearTimeout(timer);
-  }, [map, open]);
-
-  useEffect(() => {
     if (!position || !map) return;
 
     const coordinates = extractCoordinates(position);
     if (!coordinates) return;
 
     const { lat, lng } = coordinates;
-    if (!isValidLatLng(lat, lng)) {
-      return;
-    }
+    if (!isValidLatLng(lat, lng)) return;
 
-    try {
-      map.flyTo([lat, lng], 17, { duration: 0.8 });
-    } catch {
-      // Ignore invalid runtime coordinate errors to keep modal usable.
-    }
+    // Wait for the modal animation to finish + invalidate size before moving
+    // to prevent Leaflet from computing NaN during animation frames.
+    const timer = window.setTimeout(() => {
+      try {
+        map.invalidateSize({ pan: false, animate: false });
+        map.setView([lat, lng], 17, { animate: false });
+      } catch {
+        // Ignore errors if map is already unmounted.
+      }
+    }, 260);
+
+    return () => window.clearTimeout(timer);
   }, [map, position]);
+
+  // Invalidate size when modal opens (no position change yet)
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      try {
+        map.invalidateSize({ pan: false, animate: false });
+      } catch {
+        // ignore
+      }
+    }, 260);
+    return () => window.clearTimeout(timer);
+  }, [map, open]);
 
   return null;
 }
@@ -473,7 +482,9 @@ export default function StallAddModal({
                   <Form.Item
                     name="stall_name"
                     label="Tên quán"
-                    rules={[{ required: true, message: "Vui lòng nhập tên quán" }]}
+                    rules={[
+                      { required: true, message: "Vui lòng nhập tên quán" },
+                    ]}
                   >
                     <Input size="large" placeholder="Ví dụ: Quán Ăn Gia Đình" />
                   </Form.Item>
@@ -482,7 +493,9 @@ export default function StallAddModal({
                   <Form.Item
                     name="category"
                     label="Danh mục"
-                    rules={[{ required: true, message: "Vui lòng nhập danh mục" }]}
+                    rules={[
+                      { required: true, message: "Vui lòng nhập danh mục" },
+                    ]}
                   >
                     <Input size="large" placeholder="Ví dụ: Món Việt" />
                   </Form.Item>
@@ -493,7 +506,9 @@ export default function StallAddModal({
                   <Form.Item
                     name="price_range"
                     label="Mức giá"
-                    rules={[{ required: true, message: "Vui lòng nhập mức giá" }]}
+                    rules={[
+                      { required: true, message: "Vui lòng nhập mức giá" },
+                    ]}
                   >
                     <InputNumber
                       size="large"
@@ -507,7 +522,7 @@ export default function StallAddModal({
                 <Col xs={24} sm={8}>
                   <Form.Item
                     name="radius"
-                    label="Bán kính nghe thuyết minh tự động (m)"
+                    label="Phạm vi nghe (m)"
                     initialValue={50}
                   >
                     <InputNumber
@@ -537,7 +552,9 @@ export default function StallAddModal({
                   <Form.Item
                     name="opening_hours"
                     label="Giờ mở cửa"
-                    rules={[{ required: true, message: "Vui lòng chọn giờ mở cửa" }]}
+                    rules={[
+                      { required: true, message: "Vui lòng chọn giờ mở cửa" },
+                    ]}
                   >
                     <TimePicker
                       size="large"
@@ -595,7 +612,9 @@ export default function StallAddModal({
               <Form.Item
                 name="cover_image"
                 label="Ảnh bìa quán"
-                rules={[{ required: true, message: "Vui lòng chọn ảnh bìa quán" }]}
+                rules={[
+                  { required: true, message: "Vui lòng chọn ảnh bìa quán" },
+                ]}
               >
                 <div>
                   <input
@@ -609,7 +628,11 @@ export default function StallAddModal({
                     onChange={handleSelectCoverFile}
                   />
 
-                  <Space direction="vertical" size="small" style={{ width: "100%" }}>
+                  <Space
+                    direction="vertical"
+                    size="small"
+                    style={{ width: "100%" }}
+                  >
                     <Space>
                       <Button
                         icon={<UploadOutlined />}

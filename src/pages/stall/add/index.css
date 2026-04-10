@@ -13,6 +13,8 @@
 .stall-map-canvas {
   margin-top: 16px;
   position: relative;
+  width: 100%;
+  min-height: 420px;
 }
 
 .stall-map-badge {
@@ -32,11 +34,13 @@
 
 .stall-add-map {
   width: 100%;
+  min-width: 0;
   height: 420px;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid #d5e3ff;
   box-shadow: 0 12px 28px rgba(18, 42, 110, 0.12);
+  transition: width 0.2s;
 }
 
 .stall-add-map .leaflet-control-zoom {
@@ -72,6 +76,7 @@
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid #f0f0f0;
+  margin-bottom: 12px;
 }
 
 .stall-location-item .ant-form-item-explain {

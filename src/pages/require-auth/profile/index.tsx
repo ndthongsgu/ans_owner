@@ -121,8 +121,8 @@ export default function ProfilePage() {
           </Col>
           <Col xs={24} md={7}>
             <div className="profile-subscription-metric">
-              <Text className="metric-label">Ngày hết hạn</Text>
-              <Text className="metric-value">{expText || "Chưa xác định"}</Text>
+              <Text className="metric-label">Thời hạn</Text>
+              <Text className="metric-value">{expText || "Vĩnh viễn"}</Text>
             </div>
           </Col>
           <Col xs={24} md={7}>

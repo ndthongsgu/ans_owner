@@ -1,5 +1,7 @@
 import { useCallback, useRef } from "react";
 import { API_ROUTES } from "@/services/api-route";
+import { resolveSpeechLocale } from "@/utils/language.utils";
+import type { LanguageCode } from "@/dto/stall-content.dto";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -27,18 +29,7 @@ export const useAudioPlayback = (showToast: ShowToastFn) => {
     }
   }, []);
 
-  // =============================
-  // LANGUAGE
-  // =============================
-  const resolveSpeechLocale = useCallback((languageCode: string) => {
-    const normalized = languageCode.trim().toLowerCase();
-    if (normalized.startsWith("vi")) return "vi-VN";
-    if (normalized.startsWith("en")) return "en-US";
-    if (normalized.startsWith("zh")) return "zh-CN";
-    if (normalized.startsWith("ja")) return "ja-JP";
-    if (normalized.startsWith("ko")) return "ko-KR";
-    return normalized;
-  }, []);
+
 
   // =============================
   // TEXT TO SPEECH
@@ -68,11 +59,11 @@ export const useAudioPlayback = (showToast: ShowToastFn) => {
       stopPlayback();
 
       const utterance = new SpeechSynthesisUtterance(trimmed);
-      utterance.lang = resolveSpeechLocale(languageCode);
+      utterance.lang = resolveSpeechLocale(languageCode as LanguageCode);
 
       window.speechSynthesis.speak(utterance);
     },
-    [resolveSpeechLocale, showToast, stopPlayback],
+    [showToast, stopPlayback],
   );
 
   // =============================

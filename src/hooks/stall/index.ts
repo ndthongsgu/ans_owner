@@ -55,6 +55,9 @@ export const useCreateStall = () => {
       queryClient.invalidateQueries({
         queryKey: [API_ENDPOINTS.OWNER.STALLS.LIMIT],
       });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
+      });
     },
   });
 };
@@ -71,6 +74,12 @@ export const useUpdateStall = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [API_ENDPOINTS.OWNER.STALLS.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
       });
     },
   });
@@ -90,6 +99,12 @@ export const useDeleteStall = () => {
       });
       queryClient.invalidateQueries({
         queryKey: [API_ENDPOINTS.OWNER.STALLS.LIMIT],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS],
       });
     },
   });

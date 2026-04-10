@@ -8,7 +8,6 @@ import {
   Modal,
   Popconfirm,
   Row,
-  Skeleton,
   Select,
   Skeleton,
   Space,
@@ -586,6 +585,7 @@ export default function StallPage() {
       key: "actions",
       width: 200,
       fixed: "right",
+      align: "center",
       render: (_, record) => (
         <Space size={4} className="stall-content-action-buttons">
           <Tooltip title="Xem chi tiết">
