@@ -28,6 +28,7 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import API_ENDPOINTS from "@/services/api-route";
 import { DEFAULT_NEW_COVER_IMAGE } from "@/constants/stall.constants";
 import type { StallResponse } from "@/dto/stall.dto";
 import { useLoading } from "@/context/LoadingContext";
@@ -47,6 +48,7 @@ import StallEditModal, { type StallEditSubmitValues } from "./edit/index";
 import StallDetail from "./detail";
 import { normalizeStallCoverImage } from "@/utils/stall.utils";
 import "./index.css";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function StallPage() {
   const showToast = useToast();
@@ -56,6 +58,7 @@ export default function StallPage() {
   const createStallMutation = useCreateStall();
   const updateStallMutation = useUpdateStall();
   const deleteStallMutation = useDeleteStall();
+  const queryClient = useQueryClient();
 
   const [isAddStallModalOpen, setIsAddStallModalOpen] = useState(false);
   const [isEditStallModalOpen, setIsEditStallModalOpen] = useState(false);
@@ -483,6 +486,9 @@ export default function StallPage() {
     try {
       await deleteStallMutation.mutateAsync(stallId);
       message.success("Đã xóa quán");
+      // Invalidate stall content queries to reset data in stall-content page
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ENDPOINTS.OWNER.STALL_CONTENT.AVAILABLE_STALLS] });
     } catch {
       message.error("Không thể xóa quán. Vui lòng thử lại.");
     }
