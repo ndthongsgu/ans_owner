@@ -79,11 +79,7 @@ export default function SubscriptionPackagePage() {
 
   const hasOwnerActiveSubscription = Boolean(ownerPackageId);
 
-  const activePackageId =
-    currentSubscription?.subscription_package_id ||
-    currentSubscription?.package?.id ||
-    currentSubscription?.packageId ||
-    ownerPackageId;
+  const activePackageId = currentSubscription?.subscription_package_id;
 
   const hasActiveSubscription = Boolean(
     currentSubscription?.is_active ||
@@ -107,7 +103,7 @@ export default function SubscriptionPackagePage() {
   // ==========================================
   // Hàm xử lý tương tác
   // ==========================================
-  
+
   const handleOpenPayment = async (pkg: PackageDto) => {
     setSelectedPackage(pkg);
 
@@ -125,11 +121,12 @@ export default function SubscriptionPackagePage() {
         "noopener,noreferrer",
       );
       if (!paymentWindow) {
-          showToast({
-        type: "warning",
-        title: "Cảnh báo",
-        message: "Trình duyệt đang chặn popup. Vui lòng cho phép popup để mở trang thanh toán ở tab mới.",
-      });
+        showToast({
+          type: "warning",
+          title: "Cảnh báo",
+          message:
+            "Trình duyệt đang chặn popup. Vui lòng cho phép popup để mở trang thanh toán ở tab mới.",
+        });
       }
 
       showToast({
@@ -144,7 +141,7 @@ export default function SubscriptionPackagePage() {
           : "Không tạo được giao dịch VNPay";
       showToast({
         type: "error",
-        title: "Lỗi", 
+        title: "Lỗi",
         message: errorMessage,
       });
       setSelectedPackage(null);
@@ -183,16 +180,19 @@ export default function SubscriptionPackagePage() {
     }
 
     if (isPurchased) {
-      const purchasedPkg = myPurchases?.find(p => p.id === pkg.id);
-      const transactionId = (purchasedPkg as any)?.transaction_id || purchasedPkg?.id;
-      
+      const purchasedPkg = myPurchases?.find((p) => p.id === pkg.id);
+      const transactionId =
+        (purchasedPkg as any)?.transaction_id || purchasedPkg?.id;
+
       return (
         <Button
           type="primary"
           size="large"
           block
           className="subscription-btn-use"
-          loading={activatePurchaseMutation.isPending && selectedPackage?.id === pkg.id}
+          loading={
+            activatePurchaseMutation.isPending && selectedPackage?.id === pkg.id
+          }
           onClick={() => {
             setSelectedPackage(pkg);
             void handleActivatePurchase(transactionId as string);
@@ -252,9 +252,7 @@ export default function SubscriptionPackagePage() {
           <Title level={4} className="subscription-current-name">
             {currentPackageName}
           </Title>
-          <Title level={5}>
-            Sử dụng không giới hạn thời gian
-          </Title>
+          <Title level={5}>Sử dụng không giới hạn thời gian</Title>
         </Card>
       </section>
 
