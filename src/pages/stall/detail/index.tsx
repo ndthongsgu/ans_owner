@@ -7,8 +7,10 @@ import {
   Store,
   Tag as TagIcon,
   Wallet,
+  QrCode,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import type { StallResponse } from "@/dto/stall.dto";
 import { normalizeStallCoverImage } from "@/utils/stall.utils";
 import { reverseGeocode } from "@/services/location.service";
@@ -108,7 +110,6 @@ export default function StallDetail({
             </div>
           </div>
         </div>
-
         <div className="sd-info-item">
           <div className="sd-info-icon sd-icon-green">
             <Wallet size={15} />
@@ -178,6 +179,17 @@ export default function StallDetail({
           </div>
         )}
       </div>
+      <div className="sd-info-item sd-info-qr">
+          <div className="sd-info-icon sd-icon-teal">
+            <QrCode size={15} />
+          </div>
+          <div className="sd-info-body">
+            <div className="sd-info-label">Mã QR quán</div>
+            <div className="sd-qr-wrapper">
+              <QRCodeSVG value={stall.id} size={110} bgColor="#ffffff" fgColor="#0f172a" />
+            </div>
+          </div>
+        </div>
     </div>
   );
 }

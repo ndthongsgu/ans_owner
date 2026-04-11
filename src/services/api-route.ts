@@ -1,6 +1,6 @@
 export const API_ROUTES: ApiRoutes = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
-  TIMEOUT: 10000,
+  TIMEOUT: 60000,
   HEADERS: {
     "Content-Type": "application/json",
     Accept: "application/json",
