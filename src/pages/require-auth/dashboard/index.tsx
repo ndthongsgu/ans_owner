@@ -716,6 +716,35 @@ export default function Dashboard() {
             <Text className="owner-sidebar-title">Bảng điều khiển nhanh</Text>
           </div>
           <Space direction="vertical" size={16} className="owner-side-stack">
+            <Card title="Tài khoản chủ quán" className="owner-info-card">
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                  <Text type="secondary">Người liên hệ</Text>
+                  <div>
+                    <Text strong>{ownerName}</Text>
+                  </div>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Text type="secondary">Email</Text>
+                  <div>
+                    <Text strong>{profile?.email || "Chưa cập nhật"}</Text>
+                  </div>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Text type="secondary">Số điện thoại</Text>
+                  <div>
+                    <Text strong>{phone}</Text>
+                  </div>
+                </Col>
+              </Row>
+              <Divider />
+              <Button
+                onClick={() => navigate(REQUIRE_AUTH_ROUTES.OWNER_PROFILE)}
+              >
+                Xem và chỉnh sửa thông tin
+              </Button>
+            </Card>
+
             <Card
               title="Danh sách quán trên bản đồ"
               className="owner-info-card owner-stall-list-card"
@@ -753,35 +782,6 @@ export default function Dashboard() {
                   description="Chưa có dữ liệu quán"
                 />
               )}
-            </Card>
-
-            <Card title="Tài khoản chủ quán" className="owner-info-card">
-              <Row gutter={[16, 16]}>
-                <Col xs={24} md={8}>
-                  <Text type="secondary">Người liên hệ</Text>
-                  <div>
-                    <Text strong>{ownerName}</Text>
-                  </div>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Text type="secondary">Email</Text>
-                  <div>
-                    <Text strong>{profile?.email || "Chưa cập nhật"}</Text>
-                  </div>
-                </Col>
-                <Col xs={24} md={8}>
-                  <Text type="secondary">Số điện thoại</Text>
-                  <div>
-                    <Text strong>{phone}</Text>
-                  </div>
-                </Col>
-              </Row>
-              <Divider />
-              <Button
-                onClick={() => navigate(REQUIRE_AUTH_ROUTES.OWNER_PROFILE)}
-              >
-                Xem và chỉnh sửa thông tin
-              </Button>
             </Card>
 
             {selectedStall ? (

@@ -2,8 +2,10 @@ import { lazy } from "react";
 import { REQUIRE_AUTH_ROUTES } from "./routes";
 const Dashboard = lazy(() => import("@/pages/require-auth/dashboard"));
 const ProfilePage = lazy(() => import("@/pages/require-auth/profile"));
-const StallPage = lazy(() => import("@/pages/stall/index.tsx"));
-const StallContentPage = lazy(() => import("@/pages/stall-content/index.tsx"));
+const StallPage = lazy(() => import("@/pages/require-auth/stall/index.tsx"));
+const StallContentPage = lazy(
+  () => import("@/pages/require-auth/stall-content/index.tsx"),
+);
 const SubscriptionPackagePage = lazy(
   () => import("@/pages/require-auth/subscription-package"),
 );
